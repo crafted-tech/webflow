@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run demo1",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/examples/demo1",
+            "cwd": "${workspaceFolder}",
+            "args": []
+        },
+        {
+            "name": "Run demo1 (GTK4)",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/examples/demo1",
+            "cwd": "${workspaceFolder}",
+            "buildFlags": "-tags=gtk4",
+            "args": []
+        },
+        {
+            "name": "Debug demo1",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/examples/demo1",
+            "cwd": "${workspaceFolder}",
+            "args": []
+        }
+    ]
+}
