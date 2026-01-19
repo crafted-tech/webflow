@@ -45,7 +45,7 @@ func main() {
 	// Create a new flow wizard
 	f, err := webflow.New(
 		webflow.WithTitle("Demo Installer"),
-		webflow.WithSize("35em", "25em"),
+		webflow.WithSize("45em", "35em"),
 		webflow.WithResizable(false),
 	)
 	if err != nil {

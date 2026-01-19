@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 
@@ -11,9 +12,15 @@ import (
 	"github.com/crafted-tech/webframe/types"
 )
 
-// debugLog writes to the same crash log for debugging
+// debugLog writes to a crash log for debugging
 func debugLog(msg string) {
-	f, err := os.OpenFile(os.Getenv("LOCALAPPDATA")+"\\UnisonWebView\\logs\\crash.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return
+	}
+	logDir := filepath.Join(cacheDir, "UnisonWebView", "logs")
+	os.MkdirAll(logDir, 0755)
+	f, err := os.OpenFile(filepath.Join(logDir, "crash.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return
 	}
