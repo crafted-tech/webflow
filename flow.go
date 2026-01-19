@@ -23,7 +23,7 @@ func debugLog(msg string) {
 
 // Flow manages the wizard UI, displaying pages and collecting user responses.
 type Flow struct {
-	wv         types.WebView
+	wv         types.WebFrame
 	config     Config
 	responseCh chan messageResponse
 	darkMode   bool
@@ -982,7 +982,7 @@ type fileSaver interface {
 }
 
 // pickFolder uses the new Dialogs interface if available, otherwise falls back to legacy folderBrowser.
-func pickFolder(wv types.WebView, title string) (string, bool) {
+func pickFolder(wv types.WebFrame, title string) (string, bool) {
 	// Try the new Dialogs interface first
 	if d, ok := wv.(types.Dialogs); ok {
 		return d.PickFolder(types.WithTitle(title))
@@ -996,7 +996,7 @@ func pickFolder(wv types.WebView, title string) (string, bool) {
 }
 
 // saveFile uses the new Dialogs interface if available, otherwise falls back to legacy fileSaver.
-func saveFile(wv types.WebView, title, defaultName string, filters ...types.FileFilter) (string, bool) {
+func saveFile(wv types.WebFrame, title, defaultName string, filters ...types.FileFilter) (string, bool) {
 	// Try the new Dialogs interface first
 	if d, ok := wv.(types.Dialogs); ok {
 		return d.SaveFile(
