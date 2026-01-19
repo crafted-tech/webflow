@@ -1,5 +1,5 @@
-github.com/adnsv/multimon v0.5.0 h1:uHyjlXG+Z48iq7YPBBDLuwjxFFgVAneq40njeKsXcgk=
-github.com/adnsv/multimon v0.5.0/go.mod h1:XOzceRrx5Es7tk3fZtSexv9SATDvSM9BDCdTYezwoFo=
+github.com/adnsv/multimon v0.6.0 h1:Dfli8ikYO6DOdFroP9OvjRtPwJhxY70BI6SychWfP3c=
+github.com/adnsv/multimon v0.6.0/go.mod h1:XOzceRrx5Es7tk3fZtSexv9SATDvSM9BDCdTYezwoFo=
 github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
 github.com/go-ole/go-ole v1.3.0/go.mod h1:5LS6F96DhAwUc7C+1HLexzMXY1xGRSryjyPPKW6zv78=
 golang.org/x/sys v0.1.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
