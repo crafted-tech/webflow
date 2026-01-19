@@ -1,6 +1,6 @@
 module github.com/crafted-tech/webflow
 
-go 1.25.4
+go 1.24.0
 
 require (
 	github.com/crafted-tech/webframe v0.2.0
