@@ -7,7 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	webframe "github.com/crafted-tech/webframe"
+	"github.com/crafted-tech/webframe"
 	"github.com/crafted-tech/webframe/types"
 )
 
