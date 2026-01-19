@@ -1,0 +1,766 @@
+/* Browser Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove all focus outlines by default - we control focus via .using-keyboard class */
+:focus {
+    outline: none;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+html {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+}
+
+body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+    font-size: 100%;
+}
+
+/* shadcn-inspired Design Tokens */
+:root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+}
+
+[data-theme="dark"] {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+}
+
+/* Layout */
+.flow-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.5rem;
+    overflow: hidden;
+}
+
+.flow-header {
+    flex-shrink: 0;
+    margin-bottom: 1.5rem;
+}
+
+.flow-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin-bottom: 0.25rem;
+}
+
+.flow-subtitle {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+}
+
+.flow-content {
+    flex: 1;
+    min-height: 0; /* Important: allows flex child to shrink below content size */
+    overflow-y: auto;
+    padding: 4px; /* Space for focus rings */
+    margin: -4px; /* Compensate to maintain layout */
+    padding-right: calc(4px + 0.5rem); /* Extra space for scrollbar */
+    margin-right: calc(-4px - 0.5rem);
+}
+
+.flow-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid hsl(var(--border));
+}
+
+/* Stable button sizing - prevents layout shift when labels change */
+.flow-footer .btn {
+    min-width: 6rem;
+}
+
+/* Spacer pushes remaining buttons to the right */
+.button-spacer {
+    flex: 1;
+}
+
+/* Icon */
+.flow-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+}
+
+.flow-icon.icon-info {
+    color: hsl(217 91% 60%);
+}
+
+.flow-icon.icon-warning {
+    color: hsl(38 92% 50%);
+}
+
+.flow-icon.icon-error {
+    color: hsl(var(--destructive));
+}
+
+.flow-icon.icon-success {
+    color: hsl(142 71% 45%);
+}
+
+/* Message content */
+.flow-message {
+    color: hsl(var(--foreground));
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    border-radius: var(--radius);
+    font-weight: 500;
+    font-size: 0.875rem;
+    height: 2.5rem;
+    padding: 0 1rem;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Show focus ring only when using keyboard */
+body.using-keyboard .btn:focus {
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+.btn:disabled,
+.btn.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-default {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
+}
+
+.btn-default:hover:not(:disabled) {
+    background-color: hsl(var(--accent));
+}
+
+.btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: hsl(var(--primary) / 0.9);
+}
+
+.btn-destructive {
+    background-color: hsl(var(--destructive));
+    color: hsl(var(--destructive-foreground));
+}
+
+.btn-destructive:hover:not(:disabled) {
+    background-color: hsl(var(--destructive) / 0.9);
+}
+
+/* Icon-only buttons */
+.btn-icon {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0;
+    gap: 0;
+}
+
+.btn-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1rem;
+    height: 1rem;
+}
+
+.btn-icon-wrap svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Button with icon and text */
+.btn:not(.btn-icon) .btn-icon-wrap {
+    margin-right: 0.5rem;
+}
+
+.btn-icon .btn-icon-wrap {
+    transition: transform 0.2s ease-out, opacity 0.15s ease-out;
+}
+
+/* Fade out before icon swap */
+.btn-icon.fading .btn-icon-wrap {
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+/* Pop-in animation after icon swap */
+.btn-icon.copied .btn-icon-wrap {
+    animation: icon-pop-in 0.3s ease-out forwards;
+}
+
+@keyframes icon-pop-in {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+/* Form elements */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.form-group-inline .form-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.form-group-inline .form-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: hsl(var(--foreground));
+}
+
+.form-input {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    color: hsl(var(--foreground));
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease;
+}
+
+/* Text inputs always show focus (users need to know where they're typing) */
+.form-input:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: inset 0 0 0 1px hsl(var(--ring));
+}
+
+.form-input::placeholder {
+    color: hsl(var(--muted-foreground));
+}
+
+.form-textarea {
+    min-height: 5rem;
+    padding: 0.5rem 0.75rem;
+    resize: vertical;
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+/* Selects always show focus (users need to know which control is active) */
+.form-select:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: inset 0 0 0 1px hsl(var(--ring));
+}
+
+.form-checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-checkbox-group .form-label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+.form-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.125rem;
+    height: 1.125rem;
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+    border-radius: 0.25rem;
+    border: 1px solid hsl(var(--input));
+    background-color: hsl(var(--background));
+    cursor: pointer;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.form-checkbox:hover {
+    border-color: hsl(var(--ring));
+}
+
+.form-checkbox:checked {
+    background-color: hsl(var(--primary));
+    border-color: hsl(var(--primary));
+}
+
+.form-checkbox:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 6px;
+    height: 10px;
+    border: solid hsl(var(--primary-foreground));
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Checkbox focus only on keyboard */
+body.using-keyboard .form-checkbox:focus {
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+}
+
+.form-path-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.form-path-group .form-input {
+    flex: 1;
+}
+
+.form-path-group .btn {
+    flex-shrink: 0;
+}
+
+/* Choice list */
+.choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.choice-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.choice-item:hover {
+    background-color: hsl(var(--accent));
+}
+
+/* Choice item focus only on keyboard */
+body.using-keyboard .choice-item:has(input:focus) {
+    border-color: hsl(var(--ring));
+    background-color: hsl(var(--accent));
+}
+
+/* Hide native input visually but keep accessible */
+.choice-item input[type="radio"],
+.choice-item input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.choice-radio {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 50%;
+    border: 1px solid hsl(var(--input));
+    flex-shrink: 0;
+    margin-top: 0.125rem; /* Align with first line of text */
+    transition: border-color 0.15s ease;
+}
+
+.choice-item:hover .choice-radio {
+    border-color: hsl(var(--ring));
+}
+
+.choice-item input[type="radio"]:checked ~ .choice-radio {
+    border-color: hsl(var(--primary));
+    background-color: hsl(var(--primary));
+    box-shadow: inset 0 0 0 3.5px hsl(var(--background));
+}
+
+/* Checkbox for multi-select */
+.choice-checkbox {
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 0.25rem;
+    border: 1px solid hsl(var(--input));
+    flex-shrink: 0;
+    margin-top: 0.125rem; /* Align with first line of text */
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.choice-item:hover .choice-checkbox {
+    border-color: hsl(var(--ring));
+}
+
+.choice-item input[type="checkbox"]:checked ~ .choice-checkbox {
+    border-color: hsl(var(--primary));
+    background-color: hsl(var(--primary));
+}
+
+.choice-item input[type="checkbox"]:checked ~ .choice-checkbox::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 6px;
+    height: 10px;
+    border: solid hsl(var(--primary-foreground));
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.choice-content {
+    flex: 1;
+}
+
+.choice-label {
+    font-weight: 500;
+    color: hsl(var(--foreground));
+}
+
+.choice-description {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.125rem;
+}
+
+/* Menu list */
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    text-align: left;
+    width: 100%;
+}
+
+.menu-item:hover {
+    background-color: hsl(var(--accent));
+    border-color: hsl(var(--ring));
+}
+
+/* Menu item focus only on keyboard */
+body.using-keyboard .menu-item:focus {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+}
+
+.menu-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+    color: hsl(var(--muted-foreground));
+}
+
+.menu-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.menu-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.menu-title {
+    font-weight: 500;
+    color: hsl(var(--foreground));
+}
+
+.menu-description {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 0.125rem;
+}
+
+/* Log view */
+.log-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 200px;
+}
+
+.log-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-line {
+    margin: 0;
+    padding: 0;
+}
+
+.log-line.log-success {
+    color: hsl(142 71% 45%);
+}
+
+.log-line.log-warning {
+    color: hsl(38 92% 50%);
+}
+
+.log-line.log-error {
+    color: hsl(var(--destructive));
+}
+
+.log-line.log-dim {
+    color: hsl(var(--muted-foreground));
+}
+
+.log-status {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    min-height: 1.25rem;
+}
+
+/* File list view */
+.filelist-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 200px;
+}
+
+.filelist-progress {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.5rem;
+}
+
+.filelist-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.5rem;
+}
+
+.filelist-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.filelist-item.current {
+    background-color: hsl(var(--accent));
+    border-radius: 0.25rem;
+}
+
+.filelist-icon {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+.filelist-icon.pending { color: hsl(var(--muted-foreground)); }
+.filelist-icon.in-progress { color: hsl(217 91% 60%); }
+.filelist-icon.complete { color: hsl(142 71% 45%); }
+.filelist-icon.skipped { color: hsl(var(--muted-foreground)); }
+.filelist-icon.failed { color: hsl(var(--destructive)); }
+
+.filelist-path {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filelist-status {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    min-height: 1.25rem;
+}
+
+/* Review/text viewer */
+.review-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.review-subtitle {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.5rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.review-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.review-actions {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+}
+
+/* Progress bar */
+.progress-container {
+    width: 100%;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+    height: 0.5rem;
+    background-color: hsl(var(--secondary));
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: hsl(var(--primary));
+    border-radius: var(--radius);
+    transition: width 0.3s ease;
+}
+
+.progress-status {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    text-align: center;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+}
