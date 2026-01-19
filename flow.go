@@ -55,11 +55,12 @@ func New(opts ...Option) (*Flow, error) {
 	}
 
 	// Create webview
+	resizable := cfg.Resizable == nil || *cfg.Resizable // nil or true = resizable
 	wvConfig := types.Config{
 		Title:       cfg.Title,
-		WidthSpec:   cfg.Width,
-		HeightSpec:  cfg.Height,
-		Resizable:   cfg.Resizable,
+		Width:       cfg.Width,
+		Height:      cfg.Height,
+		Resizable:   resizable,
 		StartHidden: true,
 		OnClose: func() {
 			// Send a close message when window X button is clicked
