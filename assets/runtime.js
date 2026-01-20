@@ -434,5 +434,11 @@
                 cancelBtn.click();
             }
         }
+
+        // Shift+F5 toggles theme (dev shortcut)
+        if (e.key === 'F5' && e.shiftKey) {
+            e.preventDefault();
+            sendMessage('toggle_theme', {});
+        }
     });
 })();

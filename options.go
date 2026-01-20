@@ -1,13 +1,22 @@
 package webflow
 
+// ThemeMode specifies the color theme for the UI.
+type ThemeMode int
+
+const (
+	ThemeSystem ThemeMode = iota // Auto-detect from OS (default)
+	ThemeDark                    // Force dark mode
+	ThemeLight                   // Force light mode
+)
+
 // Config holds the configuration for creating a new Flow.
 type Config struct {
-	Title          string // Window title
-	Width          string // Window width spec: "40em", "600", "80%" (default: "40em")
-	Height         string // Window height spec: "30em", "450", "70%" (default: "30em")
-	Resizable      *bool  // nil or true = resizable, false = fixed size
-	DarkMode       *bool  // nil = auto-detect, true = dark, false = light
-	NativeTitleBar *bool  // nil or false = stylable titlebar, true = native system titlebar
+	Title          string     // Window title
+	Width          string     // Window width spec: "40em", "600", "80%" (default: "40em")
+	Height         string     // Window height spec: "30em", "450", "70%" (default: "30em")
+	Resizable      *bool      // nil or true = resizable, false = fixed size
+	Theme          *ThemeMode // nil = system (auto-detect)
+	NativeTitleBar *bool      // nil or false = stylable titlebar, true = native system titlebar
 }
 
 // Option is a function that configures a Flow.
@@ -37,11 +46,13 @@ func WithResizable(resizable bool) Option {
 	}
 }
 
-// WithDarkMode forces dark or light mode.
-// If not called, the system preference is auto-detected.
-func WithDarkMode(dark bool) Option {
+// WithTheme sets the color theme mode.
+// ThemeSystem (default): Auto-detect from OS using webframe's IsDarkMode()
+// ThemeDark: Force dark mode
+// ThemeLight: Force light mode
+func WithTheme(mode ThemeMode) Option {
 	return func(c *Config) {
-		c.DarkMode = &dark
+		c.Theme = &mode
 	}
 }
 

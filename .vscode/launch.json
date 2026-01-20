@@ -8,7 +8,8 @@
             "mode": "auto",
             "program": "${workspaceFolder}/examples/demo1",
             "cwd": "${workspaceFolder}",
-            "args": []
+            "args": [],
+            "console": "integratedTerminal"
         },
         {
             "name": "Run demo1 (GTK4)",
@@ -18,7 +19,8 @@
             "program": "${workspaceFolder}/examples/demo1",
             "cwd": "${workspaceFolder}",
             "buildFlags": "-tags=gtk4",
-            "args": []
+            "args": [],
+            "console": "integratedTerminal"
         },
         {
             "name": "Debug demo1",
@@ -27,7 +29,8 @@
             "mode": "debug",
             "program": "${workspaceFolder}/examples/demo1",
             "cwd": "${workspaceFolder}",
-            "args": []
+            "args": [],
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -12,6 +12,12 @@ import (
 	"github.com/crafted-tech/webframe/types"
 )
 
+// Frame appearance colors for theme modes
+var (
+	darkFrameColor  = types.RGBA{R: 0x24, G: 0x24, B: 0x24, A: 0xFF}
+	lightFrameColor = types.RGBA{R: 0xF5, G: 0xF5, B: 0xF5, A: 0xFF}
+)
+
 // debugLog writes to a crash log for debugging
 func debugLog(msg string) {
 	cacheDir, err := os.UserCacheDir()
@@ -87,12 +93,28 @@ func New(opts ...Option) (*Flow, error) {
 
 	f.wv = wv
 
-	// Auto-detect dark mode or use configured value
-	if cfg.DarkMode != nil {
-		f.darkMode = *cfg.DarkMode
-	} else {
-		// Default to light mode; platform detection happens in webview
+	// Determine dark mode based on theme setting
+	switch {
+	case cfg.Theme == nil, *cfg.Theme == ThemeSystem:
+		// Auto-detect from OS
+		osIsDark := wv.IsDarkMode()
+		f.darkMode = osIsDark
+		fmt.Printf("[webflow] Theme: system (auto-detect), wv.IsDarkMode()=%v, using darkMode=%v\n", osIsDark, f.darkMode)
+	case *cfg.Theme == ThemeDark:
+		f.darkMode = true
+		fmt.Printf("[webflow] Theme: forced dark, using darkMode=%v\n", f.darkMode)
+	case *cfg.Theme == ThemeLight:
 		f.darkMode = false
+		fmt.Printf("[webflow] Theme: forced light, using darkMode=%v\n", f.darkMode)
+	}
+
+	// Set initial frame appearance to match theme
+	if f.darkMode {
+		fmt.Printf("[webflow] Setting frame appearance to dark (#242424)\n")
+		wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColor})
+	} else {
+		fmt.Printf("[webflow] Setting frame appearance to light (#F5F5F5)\n")
+		wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColor})
 	}
 
 	// Set up message handler
@@ -124,6 +146,26 @@ func New(opts ...Option) (*Flow, error) {
 			debugLog("calling handleBrowseFolder")
 			f.handleBrowseFolder(resp)
 			debugLog("handleBrowseFolder returned")
+			return
+		}
+
+		if resp.Type == "toggle_theme" {
+			f.darkMode = !f.darkMode
+			fmt.Printf("[webflow] Theme toggled via Shift+F5, new darkMode=%v\n", f.darkMode)
+
+			// Update window frame decorations
+			if f.darkMode {
+				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColor})
+			} else {
+				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColor})
+			}
+
+			// Update CSS class instantly (no re-render needed)
+			if f.darkMode {
+				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'dark')`)
+			} else {
+				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'light')`)
+			}
 			return
 		}
 
