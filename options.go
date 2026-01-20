@@ -2,11 +2,12 @@ package webflow
 
 // Config holds the configuration for creating a new Flow.
 type Config struct {
-	Title     string // Window title
-	Width     string // Window width spec: "40em", "600", "80%" (default: "40em")
-	Height    string // Window height spec: "30em", "450", "70%" (default: "30em")
-	Resizable *bool  // nil or true = resizable, false = fixed size
-	DarkMode  *bool  // nil = auto-detect, true = dark, false = light
+	Title          string // Window title
+	Width          string // Window width spec: "40em", "600", "80%" (default: "40em")
+	Height         string // Window height spec: "30em", "450", "70%" (default: "30em")
+	Resizable      *bool  // nil or true = resizable, false = fixed size
+	DarkMode       *bool  // nil = auto-detect, true = dark, false = light
+	NativeTitleBar *bool  // nil or false = stylable titlebar, true = native system titlebar
 }
 
 // Option is a function that configures a Flow.
@@ -41,6 +42,16 @@ func WithResizable(resizable bool) Option {
 func WithDarkMode(dark bool) Option {
 	return func(c *Config) {
 		c.DarkMode = &dark
+	}
+}
+
+// WithNativeTitleBar uses native system titlebar instead of app-drawn stylable titlebar.
+// When true: Window uses native system titlebar (no frame styling)
+// When false (default): Window uses stylable titlebar
+// Only affects Linux (GTK3/GTK4). Ignored on Windows/macOS.
+func WithNativeTitleBar(native bool) Option {
+	return func(c *Config) {
+		c.NativeTitleBar = &native
 	}
 }
 

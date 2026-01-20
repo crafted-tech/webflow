@@ -63,12 +63,14 @@ func New(opts ...Option) (*Flow, error) {
 
 	// Create webview
 	resizable := cfg.Resizable == nil || *cfg.Resizable // nil or true = resizable
+	nativeTitleBar := cfg.NativeTitleBar != nil && *cfg.NativeTitleBar // nil or false = stylable titlebar
 	wvConfig := types.Config{
-		Title:       cfg.Title,
-		Width:       cfg.Width,
-		Height:      cfg.Height,
-		Resizable:   resizable,
-		StartHidden: true,
+		Title:          cfg.Title,
+		Width:          cfg.Width,
+		Height:         cfg.Height,
+		Resizable:      resizable,
+		NativeTitleBar: nativeTitleBar,
+		StartHidden:    true,
 		OnClose: func() {
 			// Send a close message when window X button is clicked
 			select {
