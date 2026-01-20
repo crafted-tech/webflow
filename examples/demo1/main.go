@@ -47,6 +47,7 @@ func main() {
 		webflow.WithTitle("Demo Installer"),
 		webflow.WithSize("45em", "35em"),
 		webflow.WithResizable(false),
+		//webflow.WithNativeTitleBar(true),
 	)
 	if err != nil {
 		log.Fatalf("Failed to create flow: %v", err)
@@ -107,9 +108,6 @@ func main() {
 				step = stepWelcome
 				continue
 			case webflow.ButtonResultClose:
-				f.ShowMessage("Installation Cancelled",
-					"You must accept the license agreement to install this software.",
-					webflow.WithButtonBar(webflow.SimpleClose()))
 				return
 			}
 			step = stepInstallType
