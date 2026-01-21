@@ -14,8 +14,10 @@ import (
 
 // Fallback frame colors when GetHeaderBarColor is not available
 var (
-	darkFrameColorFallback  = types.RGBA{R: 0x1C, G: 0x1F, B: 0x26, A: 0xFF}
-	lightFrameColorFallback = types.RGBA{R: 0xF4, G: 0xF5, B: 0xF7, A: 0xFF}
+	darkFrameColorFallback          = types.RGBA{R: 0x1C, G: 0x1F, B: 0x26, A: 0xFF}
+	lightFrameColorFallback         = types.RGBA{R: 0xF4, G: 0xF5, B: 0xF7, A: 0xFF}
+	darkBackdropFrameColorFallback  = types.RGBA{R: 0x18, G: 0x1A, B: 0x20, A: 0xFF}
+	lightBackdropFrameColorFallback = types.RGBA{R: 0xE8, G: 0xE9, B: 0xEB, A: 0xFF}
 )
 
 // debugLog writes to a crash log for debugging
@@ -108,10 +110,12 @@ func New(opts ...Option) (*Flow, error) {
 		fmt.Printf("[webflow] Theme: forced light, using darkMode=%v\n", f.darkMode)
 	}
 
-	// Set initial frame appearance using system headerbar color
+	// Set initial frame appearance using system headerbar colors (active and backdrop)
 	frameColor := wv.GetHeaderBarColor()
-	fmt.Printf("[webflow] Setting frame appearance to system color (#%02x%02x%02x)\n", frameColor.R, frameColor.G, frameColor.B)
-	wv.SetFrameAppearance(types.FrameAppearance{TitleBar: frameColor})
+	backdropFrameColor := wv.GetBackdropHeaderBarColor()
+	fmt.Printf("[webflow] Setting frame appearance to system colors (active=#%02x%02x%02x, backdrop=#%02x%02x%02x)\n",
+		frameColor.R, frameColor.G, frameColor.B, backdropFrameColor.R, backdropFrameColor.G, backdropFrameColor.B)
+	wv.SetFrameAppearance(types.FrameAppearance{TitleBar: frameColor, BackdropTitleBar: backdropFrameColor})
 
 	// Register for OS theme changes (only when using system theme)
 	if cfg.Theme == nil || *cfg.Theme == ThemeSystem {
@@ -119,10 +123,12 @@ func New(opts ...Option) (*Flow, error) {
 			fmt.Printf("[webflow] OS theme changed: isDark=%v\n", isDark)
 			f.darkMode = isDark
 
-			// Update window frame decorations using system color
+			// Update window frame decorations using system colors (active and backdrop)
 			newFrameColor := f.wv.GetHeaderBarColor()
-			fmt.Printf("[webflow] Updating frame to system color (#%02x%02x%02x)\n", newFrameColor.R, newFrameColor.G, newFrameColor.B)
-			f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: newFrameColor})
+			newBackdropFrameColor := f.wv.GetBackdropHeaderBarColor()
+			fmt.Printf("[webflow] Updating frame to system colors (active=#%02x%02x%02x, backdrop=#%02x%02x%02x)\n",
+				newFrameColor.R, newFrameColor.G, newFrameColor.B, newBackdropFrameColor.R, newBackdropFrameColor.G, newBackdropFrameColor.B)
+			f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: newFrameColor, BackdropTitleBar: newBackdropFrameColor})
 
 			// Update CSS class instantly
 			if f.darkMode {
@@ -179,9 +185,15 @@ func New(opts ...Option) (*Flow, error) {
 			// Update window frame decorations using fallback colors for manual toggle
 			// (we can't query system color since we're forcing a non-system theme)
 			if f.darkMode {
-				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColorFallback})
+				f.wv.SetFrameAppearance(types.FrameAppearance{
+					TitleBar:         darkFrameColorFallback,
+					BackdropTitleBar: darkBackdropFrameColorFallback,
+				})
 			} else {
-				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColorFallback})
+				f.wv.SetFrameAppearance(types.FrameAppearance{
+					TitleBar:         lightFrameColorFallback,
+					BackdropTitleBar: lightBackdropFrameColorFallback,
+				})
 			}
 			return
 		}
