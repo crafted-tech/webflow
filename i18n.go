@@ -4,7 +4,9 @@ package webflow
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
+	"sync"
 )
 
 // Translation markers - control characters for translation keys
@@ -860,33 +862,59 @@ var libraryTranslations = map[string]map[string]string{
 	},
 }
 
-// T marks a string as a translation key.
-// The frontend will look up this key in the translations dictionary.
+// Package-level language state for immediate translation in T() and TF().
+// This is set before rendering a page and used by T()/TF() to translate immediately.
+var (
+	currentLanguage        = "en"
+	currentAppTranslations map[string]map[string]string
+	langMu                 sync.RWMutex
+)
+
+// SetLanguage sets the current language and app translations for T() and TF().
+// This must be called before rendering a page to ensure translations are correct.
+func SetLanguage(lang string, appTrans map[string]map[string]string) {
+	langMu.Lock()
+	currentLanguage = lang
+	currentAppTranslations = appTrans
+	langMu.Unlock()
+}
+
+// T translates a string immediately using the current language.
+// Call SetLanguage() before rendering to ensure correct translations.
 //
 // Example:
 //
 //	button := Button{Label: T("button.next")} // Will be translated to "Next", "Weiter", etc.
 func T(key string) string {
-	return TranslationPrefix + key
+	langMu.RLock()
+	lang := currentLanguage
+	appTrans := currentAppTranslations
+	langMu.RUnlock()
+
+	return lookupTranslation(key, lang, appTrans)
 }
 
-// TF marks a translation key with format arguments for placeholder substitution.
-// The frontend will look up the key and replace {0}, {1}, etc. with the provided arguments.
+// TF translates a key with format arguments, substituting placeholders immediately.
+// Call SetLanguage() before rendering to ensure correct translations.
 //
 // Example:
 //
 //	title := TF("welcome.title", "Unison Auditor")
 //	// "Welcome to the {0} Setup Wizard" → "Welcome to the Unison Auditor Setup Wizard"
 func TF(key string, args ...any) string {
-	if len(args) == 0 {
-		return T(key)
+	langMu.RLock()
+	lang := currentLanguage
+	appTrans := currentAppTranslations
+	langMu.RUnlock()
+
+	template := lookupTranslation(key, lang, appTrans)
+
+	// Substitute {0}, {1}, etc. with args
+	for i, arg := range args {
+		placeholder := fmt.Sprintf("{%d}", i)
+		template = strings.ReplaceAll(template, placeholder, fmt.Sprint(arg))
 	}
-	argsJSON, err := json.Marshal(args)
-	if err != nil {
-		// Fallback to key only if JSON encoding fails
-		return T(key)
-	}
-	return TranslationPrefix + key + ArgSeparator + string(argsJSON)
+	return template
 }
 
 // TranslateString translates a string that may contain translation markers.

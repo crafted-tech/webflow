@@ -210,7 +210,24 @@ func New(opts ...Option) (*Flow, error) {
 				f.mu.Lock()
 				f.language = lang
 				f.mu.Unlock()
+				SetLanguage(lang, f.config.AppTranslations) // Update global state so T()/TF() use new language immediately
 				fmt.Printf("[webflow] Language changed to: %s\n", lang)
+
+				// Send response so ShowPage returns and caller can rebuild page
+				select {
+				case f.responseCh <- messageResponse{
+					Type:   "change_language",
+					Button: "",
+					Data:   map[string]any{"_language_changed": true},
+				}:
+					f.mu.Lock()
+					shouldQuit := f.quitOnMsg
+					f.mu.Unlock()
+					if shouldQuit {
+						f.wv.Quit()
+					}
+				default:
+				}
 			}
 			return
 		}
@@ -249,13 +266,16 @@ func (f *Flow) Run() {
 	f.wv.Run()
 }
 
-// ShowPage displays a custom page and waits for user interaction.
-// This is the core building block - all other Show* methods use it internally.
-func (f *Flow) ShowPage(page Page) Response {
+// showPageInternal displays a page and returns the raw messageResponse.
+// This is used internally by Show* methods to get the raw response.
+func (f *Flow) showPageInternal(page Page) messageResponse {
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+
+	// Set language for T()/TF() to translate immediately
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 
 	f.wv.LoadHTML(html)
 	f.wv.Show()
@@ -274,11 +294,50 @@ func (f *Flow) ShowPage(page Page) Response {
 	f.mu.Unlock()
 
 	// Get response from channel
-	msg := <-f.responseCh
+	return <-f.responseCh
+}
 
-	return Response{
-		Button: msg.Button,
-		Data:   msg.Data,
+// ShowPage displays a custom page and waits for user interaction.
+// This is the core building block for custom pages.
+//
+// Returns:
+//   - Navigation (Back/Close/Cancel) if user clicked a navigation button
+//   - LanguageChange if user changed the language
+//   - nil if user clicked Next/OK (proceeds with no data)
+//   - map[string]any if the page has form data
+func (f *Flow) ShowPage(page Page) any {
+	msg := f.showPageInternal(page)
+
+	// Check for language change
+	if msg.Data != nil {
+		if changed, _ := msg.Data["_language_changed"].(bool); changed {
+			return LanguageChange{Lang: f.language}
+		}
+	}
+
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type == "window_close" {
+			return Close
+		}
+		if msg.Button == "" {
+			// Empty button with data means proceed
+			if msg.Data != nil {
+				return msg.Data
+			}
+			return nil
+		}
+		return Close
+	case ButtonNext:
+		if msg.Data != nil && len(msg.Data) > 0 {
+			return msg.Data
+		}
+		return nil
+	default:
+		// Custom button - return as Navigation with the button ID
+		return Navigation(msg.Button)
 	}
 }
 
@@ -308,7 +367,11 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 // The content parameter can be a string (for simple text) or other content types like
 // SummaryConfig (for key-value summaries). Use WithButtonBar option to set navigation buttons.
 // Default is SimpleOK() if no ButtonBar is provided.
-func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) (Response, ButtonResult) {
+//
+// Returns:
+//   - nil if user clicked Next/OK
+//   - Navigation (Back/Close/Cancel or custom button ID) for navigation
+func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -324,15 +387,31 @@ func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) (Respo
 	}
 
 	page := applyPageConfig(title, content, opts)
-	resp := f.ShowPage(page)
-	return resp, resp.ToButtonResult()
+	msg := f.showPageInternal(page)
+
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
+			return nil // Next/OK
+		}
+		return Close
+	case ButtonNext:
+		return nil
+	default:
+		return Navigation(msg.Button)
+	}
 }
 
 // ShowChoice displays a list of options for single selection.
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
-// Returns the selected index (0-based), Response, and ButtonResult.
-func (f *Flow) ShowChoice(title string, options []string, opts ...PageOption) (int, Response, ButtonResult) {
+//
+// Returns:
+//   - int (selected index, 0-based) if user clicked Next
+//   - Navigation (Back/Close/Cancel) for navigation
+func (f *Flow) ShowChoice(title string, options []string, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -353,24 +432,39 @@ func (f *Flow) ShowChoice(title string, options []string, opts ...PageOption) (i
 	}
 
 	page := applyPageConfig(title, choices, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Extract selected index from response data
-	selectedIdx := 0
-	if idx, ok := resp.Data["_selected_index"]; ok {
-		if idxFloat, ok := idx.(float64); ok {
-			selectedIdx = int(idxFloat)
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			// Proceed with selection
+			if idx, ok := msg.Data["_selected_index"].(float64); ok {
+				return int(idx)
+			}
+			return 0
 		}
+		return Close
+	case ButtonNext:
+		if idx, ok := msg.Data["_selected_index"].(float64); ok {
+			return int(idx)
+		}
+		return 0
+	default:
+		return Navigation(msg.Button)
 	}
-
-	return selectedIdx, resp, resp.ToButtonResult()
 }
 
 // ShowChoices displays a list of Choice structs for single selection.
 // This provides more control over the display than ShowChoice.
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
-func (f *Flow) ShowChoices(title string, choices []Choice, opts ...PageOption) (int, Response, ButtonResult) {
+//
+// Returns:
+//   - int (selected index, 0-based) if user clicked Next
+//   - Navigation (Back/Close/Cancel) for navigation
+func (f *Flow) ShowChoices(title string, choices []Choice, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -386,24 +480,37 @@ func (f *Flow) ShowChoices(title string, choices []Choice, opts ...PageOption) (
 	}
 
 	page := applyPageConfig(title, choices, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Extract selected index from response data
-	selectedIdx := 0
-	if idx, ok := resp.Data["_selected_index"]; ok {
-		if idxFloat, ok := idx.(float64); ok {
-			selectedIdx = int(idxFloat)
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			if idx, ok := msg.Data["_selected_index"].(float64); ok {
+				return int(idx)
+			}
+			return 0
 		}
+		return Close
+	case ButtonNext:
+		if idx, ok := msg.Data["_selected_index"].(float64); ok {
+			return int(idx)
+		}
+		return 0
+	default:
+		return Navigation(msg.Button)
 	}
-
-	return selectedIdx, resp, resp.ToButtonResult()
 }
 
 // ShowForm displays a form with multiple input fields.
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
-// Returns the field values as a map, Response, and ButtonResult.
-func (f *Flow) ShowForm(title string, fields []FormField, opts ...PageOption) (map[string]any, Response, ButtonResult) {
+//
+// Returns:
+//   - map[string]any with form field values (keyed by field ID) if user clicked Next
+//   - Navigation (Back/Close/Cancel) for navigation
+func (f *Flow) ShowForm(title string, fields []FormField, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -419,24 +526,49 @@ func (f *Flow) ShowForm(title string, fields []FormField, opts ...PageOption) (m
 	}
 
 	page := applyPageConfig(title, fields, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Extract form values from response data
-	values := make(map[string]any)
-	for _, field := range fields {
-		if v, ok := resp.Data[field.ID]; ok {
-			values[field.ID] = v
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			return msg.Data
 		}
+		return Close
+	case ButtonNext:
+		if msg.Data == nil {
+			return make(map[string]any)
+		}
+		return msg.Data
+	default:
+		return Navigation(msg.Button)
 	}
-
-	return values, resp, resp.ToButtonResult()
 }
 
 // ShowConfirm displays a Yes/No confirmation dialog.
-// Returns true if the user clicked Yes, false otherwise.
-func (f *Flow) ShowConfirm(title, message string) bool {
-	_, result := f.ShowMessage(title, message, WithButtonBar(ConfirmYesNo()))
-	return result == ButtonResultNext
+//
+// Returns:
+//   - true if user clicked Yes
+//   - false if user clicked No
+//   - Navigation (Close) if window was closed
+func (f *Flow) ShowConfirm(title, message string) any {
+	page := applyPageConfig(title, message, []PageOption{WithButtonBar(ConfirmYesNo())})
+	msg := f.showPageInternal(page)
+
+	switch msg.Button {
+	case ButtonBack: // No button uses Back ID in ConfirmYesNo
+		return false
+	case ButtonNext: // Yes button uses Next ID
+		return true
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
+			return true // Default to Yes for unexpected empty button
+		}
+		return Close
+	default:
+		return Navigation(msg.Button)
+	}
 }
 
 // ShowError displays an error message with an OK button and error icon.
@@ -471,7 +603,8 @@ func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy fu
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -508,8 +641,12 @@ func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy fu
 }
 
 // ShowWelcome displays a welcome page with optional logo and language selector.
-// Returns the ButtonResult (typically Next or Close).
-func (f *Flow) ShowWelcome(cfg WelcomeConfig, opts ...PageOption) ButtonResult {
+//
+// Returns:
+//   - nil if user clicked Next
+//   - LanguageChange if user changed the language (caller should rebuild page)
+//   - Navigation (Close) if window was closed
+func (f *Flow) ShowWelcome(cfg WelcomeConfig, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -525,13 +662,34 @@ func (f *Flow) ShowWelcome(cfg WelcomeConfig, opts ...PageOption) ButtonResult {
 	}
 
 	page := applyPageConfig("", cfg, opts)
-	resp := f.ShowPage(page)
-	return resp.ToButtonResult()
+	msg := f.showPageInternal(page)
+
+	// Check for language change
+	if msg.Data != nil {
+		if changed, _ := msg.Data["_language_changed"].(bool); changed {
+			return LanguageChange{Lang: f.language}
+		}
+	}
+
+	switch msg.Button {
+	case ButtonNext:
+		return nil
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
+			return nil
+		}
+		return Close
+	default:
+		return Navigation(msg.Button)
+	}
 }
 
 // ShowLicense displays a license agreement page.
-// Returns true if the user accepted (I Agree), false if declined or closed.
-func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) bool {
+//
+// Returns:
+//   - true if user clicked "I Agree"
+//   - Navigation (Back/Close) for navigation
+func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -550,14 +708,30 @@ func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) bool {
 	opts = append(opts, WithBorderedContent())
 
 	page := applyPageConfig(cfg.Title, cfg, opts)
-	resp := f.ShowPage(page)
-	return resp.ToButtonResult() == ButtonResultNext
+	msg := f.showPageInternal(page)
+
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonNext:
+		return true
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
+			return true
+		}
+		return Close
+	default:
+		return Navigation(msg.Button)
+	}
 }
 
 // ShowConfirmWithCheckbox displays a confirmation dialog with a required checkbox.
 // The Next/Install button is disabled until the checkbox is checked.
-// Returns true if the user confirmed (clicked Next with checkbox checked), false otherwise.
-func (f *Flow) ShowConfirmWithCheckbox(cfg ConfirmCheckboxConfig, opts ...PageOption) bool {
+//
+// Returns:
+//   - true if user confirmed (checked the box and clicked Next/Install)
+//   - Navigation (Back/Close) for navigation
+func (f *Flow) ShowConfirmWithCheckbox(cfg ConfirmCheckboxConfig, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -576,15 +750,21 @@ func (f *Flow) ShowConfirmWithCheckbox(cfg ConfirmCheckboxConfig, opts ...PageOp
 	}
 
 	page := applyPageConfig(cfg.Title, cfg, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Check if checkbox was checked and Next was clicked
-	if resp.ToButtonResult() == ButtonResultNext {
-		if checked, ok := resp.Data["_confirm_checkbox"].(bool); ok && checked {
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonNext:
+		return true
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
 			return true
 		}
+		return Close
+	default:
+		return Navigation(msg.Button)
 	}
-	return false
 }
 
 // ShowFileSavePicker shows a native file save dialog and returns the selected path.
@@ -602,8 +782,11 @@ func (f *Flow) ShowFileSavePicker(title, defaultName string, filters ...FileFilt
 }
 
 // ShowTextInput displays a single text input dialog.
-// Returns the entered text and the ButtonResult.
-func (f *Flow) ShowTextInput(title, label, defaultValue string, opts ...PageOption) (string, ButtonResult) {
+//
+// Returns:
+//   - string (the entered text) if user clicked OK/Next
+//   - Navigation (Back/Close) for navigation
+func (f *Flow) ShowTextInput(title, label, defaultValue string, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -628,21 +811,39 @@ func (f *Flow) ShowTextInput(title, label, defaultValue string, opts ...PageOpti
 	}
 
 	page := applyPageConfig(title, fields, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	text := ""
-	if v, ok := resp.Data["_text_input"].(string); ok {
-		text = v
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			if v, ok := msg.Data["_text_input"].(string); ok {
+				return v
+			}
+			return ""
+		}
+		return Close
+	case ButtonNext:
+		if msg.Data != nil {
+			if v, ok := msg.Data["_text_input"].(string); ok {
+				return v
+			}
+		}
+		return ""
+	default:
+		return Navigation(msg.Button)
 	}
-
-	return text, resp.ToButtonResult()
 }
 
 // ShowMultiChoice displays a multi-selection list (checkboxes).
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
-// Returns the selected indices, Response, and ButtonResult.
-func (f *Flow) ShowMultiChoice(title string, options []string, opts ...PageOption) ([]int, Response, ButtonResult) {
+//
+// Returns:
+//   - []int (selected indices, 0-based) if user clicked Next
+//   - Navigation (Back/Close) for navigation
+func (f *Flow) ShowMultiChoice(title string, options []string, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -664,26 +865,49 @@ func (f *Flow) ShowMultiChoice(title string, options []string, opts ...PageOptio
 
 	mc := MultiChoice{Choices: choices}
 	page := applyPageConfig(title, mc, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Extract selected indices from response data
-	var selectedIndices []int
-	if indices, ok := resp.Data["_selected_indices"].([]any); ok {
+	// Helper to extract indices from response data
+	extractIndices := func(data map[string]any) []int {
+		if data == nil {
+			return nil
+		}
+		indices, ok := data["_selected_indices"].([]any)
+		if !ok {
+			return nil
+		}
+		result := make([]int, 0, len(indices))
 		for _, idx := range indices {
 			if idxFloat, ok := idx.(float64); ok {
-				selectedIndices = append(selectedIndices, int(idxFloat))
+				result = append(result, int(idxFloat))
 			}
 		}
+		return result
 	}
 
-	return selectedIndices, resp, resp.ToButtonResult()
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			return extractIndices(msg.Data)
+		}
+		return Close
+	case ButtonNext:
+		return extractIndices(msg.Data)
+	default:
+		return Navigation(msg.Button)
+	}
 }
 
 // ShowMenu displays a menu with clickable items.
 // When the user clicks an item, the method returns immediately with the item index.
 // Use WithButtonBar option to set navigation buttons.
-// Returns the selected item index (-1 if cancelled via buttons), Response, and ButtonResult.
-func (f *Flow) ShowMenu(title string, items []MenuItem, opts ...PageOption) (int, Response, ButtonResult) {
+//
+// Returns:
+//   - int (selected item index, 0-based) if user clicked an item
+//   - Navigation (Close) if user closed without selecting
+func (f *Flow) ShowMenu(title string, items []MenuItem, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -701,19 +925,24 @@ func (f *Flow) ShowMenu(title string, items []MenuItem, opts ...PageOption) (int
 	}
 
 	page := applyPageConfig(title, items, opts)
-	resp := f.ShowPage(page)
+	msg := f.showPageInternal(page)
 
-	// Check if a menu item was clicked
-	selectedIdx := -1
-	if resp.Button == "menu_item" {
-		if idx, ok := resp.Data["_selected_index"]; ok {
-			if idxFloat, ok := idx.(float64); ok {
-				selectedIdx = int(idxFloat)
+	switch msg.Button {
+	case "menu_item":
+		if idx, ok := msg.Data["_selected_index"].(float64); ok {
+			return int(idx)
+		}
+		return 0
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
+			if idx, ok := msg.Data["_selected_index"].(float64); ok {
+				return int(idx)
 			}
 		}
+		return Close
+	default:
+		return Navigation(msg.Button)
 	}
-
-	return selectedIdx, resp, resp.ToButtonResult()
 }
 
 // ShowLog displays a live log view and runs the work function.
@@ -732,7 +961,8 @@ func (f *Flow) ShowLog(title string, work func(log LogWriter)) {
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -850,7 +1080,8 @@ func (f *Flow) ShowFileProgress(title string, work func(files FileList)) {
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -1055,7 +1286,8 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -1110,8 +1342,11 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 // ShowProgress displays a progress bar and executes the provided work function.
 // The work function receives a Progress interface to report progress.
 // This method blocks until the work is complete or cancelled.
-// Returns true if the work completed normally, false if cancelled.
-func (f *Flow) ShowProgress(title string, work func(p Progress)) bool {
+//
+// Returns:
+//   - nil if work completed successfully
+//   - Navigation (Cancel/Close) if user cancelled
+func (f *Flow) ShowProgress(title string, work func(p Progress)) any {
 	debugLog("ShowProgress: starting")
 	f.progressCancelled.Store(false)
 
@@ -1124,7 +1359,8 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) bool {
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
+	SetLanguage(lang, f.config.AppTranslations)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -1179,14 +1415,14 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) bool {
 			// Don't wait for work to finish - the message loop has exited
 			// and waiting would freeze the UI. The work goroutine will
 			// check Cancelled() and clean up on its own.
-			debugLog("ShowProgress: returning false (cancelled)")
-			return false
+			debugLog("ShowProgress: returning cancelled response")
+			return Cancel
 		}
 	default:
 		debugLog("ShowProgress: work completed normally (no message in responseCh)")
 	}
-	debugLog("ShowProgress: returning true (completed)")
-	return true
+	debugLog("ShowProgress: returning completed response")
+	return nil
 }
 
 // progressImpl implements the Progress interface.

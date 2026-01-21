@@ -2,6 +2,58 @@
 // (installers, setup assistants, configuration tools, onboarding flows) using HTML rendering.
 package webflow
 
+// Navigation represents a navigation action (back, close, cancel, or custom button).
+// When a Show* method returns a Navigation value, it means the user clicked a
+// navigation button rather than proceeding with data.
+type Navigation string
+
+const (
+	Back   Navigation = "back"
+	Close  Navigation = "close"
+	Cancel Navigation = "cancel"
+)
+
+// LanguageChange indicates the user changed the UI language via the language selector.
+// When this is returned from ShowWelcome, the caller should rebuild the page
+// to get fresh translations.
+type LanguageChange struct {
+	Lang string // The new language code (e.g., "en", "es", "de")
+}
+
+// IsBack returns true if the response is a Back navigation action.
+func IsBack(resp any) bool {
+	nav, ok := resp.(Navigation)
+	return ok && nav == Back
+}
+
+// IsClose returns true if the response is a Close or Cancel navigation action.
+func IsClose(resp any) bool {
+	nav, ok := resp.(Navigation)
+	return ok && (nav == Close || nav == Cancel)
+}
+
+// IsButton returns true if the response is a Navigation action with the given ID.
+// Use this to check for custom button clicks.
+func IsButton(resp any, id string) bool {
+	nav, ok := resp.(Navigation)
+	return ok && string(nav) == id
+}
+
+// LanguageChanged returns true if the response indicates a language change.
+func LanguageChanged(resp any) bool {
+	_, ok := resp.(LanguageChange)
+	return ok
+}
+
+// Language returns the new language code if the response is a LanguageChange,
+// or an empty string otherwise.
+func Language(resp any) string {
+	if lc, ok := resp.(LanguageChange); ok {
+		return lc.Lang
+	}
+	return ""
+}
+
 // FieldType represents the type of a form field.
 type FieldType int
 
@@ -94,16 +146,6 @@ type ButtonBar struct {
 	Actions []*Button // Additional action buttons on the left (e.g., Copy, Save icons)
 }
 
-// ButtonResult represents which button the user clicked.
-type ButtonResult int
-
-const (
-	ButtonResultClose ButtonResult = iota // Close clicked or window closed
-	ButtonResultBack                      // Back clicked
-	ButtonResultNext                      // Next/OK/Install clicked
-	ButtonResultLeft                      // Left helper clicked
-)
-
 // WizardFirst returns a ButtonBar for the first wizard page: [Next >] [Close].
 // No back button since going back is not possible.
 // Button labels are translation keys - they will be translated by the frontend.
@@ -185,30 +227,6 @@ func ConfirmYesNo() ButtonBar {
 	}
 }
 
-// Response holds the result of a user interaction with a flow page.
-type Response struct {
-	Button string         // Which button was clicked
-	Data   map[string]any // Form data, selections, etc.
-}
-
-// ToButtonResult converts the Response's Button string to a ButtonResult.
-// This maps button IDs to the corresponding result:
-//   - "back" -> ButtonResultBack
-//   - "next" -> ButtonResultNext
-//   - "left" -> ButtonResultLeft
-//   - "close", "cancel", or window close -> ButtonResultClose
-func (r Response) ToButtonResult() ButtonResult {
-	switch r.Button {
-	case ButtonBack:
-		return ButtonResultBack
-	case ButtonNext:
-		return ButtonResultNext
-	case "left":
-		return ButtonResultLeft
-	default:
-		return ButtonResultClose
-	}
-}
 
 // FormField represents a single input field in a form.
 type FormField struct {

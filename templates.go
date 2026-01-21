@@ -12,183 +12,12 @@ import (
 // Uses currentColor to inherit text color from CSS.
 const selectChevron = `<svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 4L6 8L9 4z"/></svg>`
 
-// translatePage translates all translatable strings in a Page struct.
-// This creates a copy of the page with all translation keys resolved to actual text.
-func translatePage(page Page, lang string, appTrans map[string]map[string]string) Page {
-	// Create a copy to avoid modifying the original
-	translated := page
-
-	// Translate top-level fields
-	translated.Title = TranslateString(page.Title, lang, appTrans)
-	translated.Subtitle = TranslateString(page.Subtitle, lang, appTrans)
-
-	// Translate ButtonBar
-	translated.ButtonBar = translateButtonBar(page.ButtonBar, lang, appTrans)
-
-	// Translate legacy Buttons array
-	if len(page.Buttons) > 0 {
-		translated.Buttons = make([]Button, len(page.Buttons))
-		for i, btn := range page.Buttons {
-			translated.Buttons[i] = translateButton(btn, lang, appTrans)
-		}
-	}
-
-	// Translate Content based on type
-	if page.Content != nil {
-		translated.Content = translateContent(page.Content, lang, appTrans)
-	}
-
-	return translated
-}
-
-// translateButtonBar translates all buttons in a ButtonBar.
-func translateButtonBar(bb ButtonBar, lang string, appTrans map[string]map[string]string) ButtonBar {
-	var result ButtonBar
-
-	if bb.Back != nil {
-		btn := translateButton(*bb.Back, lang, appTrans)
-		result.Back = &btn
-	}
-	if bb.Next != nil {
-		btn := translateButton(*bb.Next, lang, appTrans)
-		result.Next = &btn
-	}
-	if bb.Close != nil {
-		btn := translateButton(*bb.Close, lang, appTrans)
-		result.Close = &btn
-	}
-	if bb.Left != nil {
-		btn := translateButton(*bb.Left, lang, appTrans)
-		result.Left = &btn
-	}
-	if len(bb.Actions) > 0 {
-		result.Actions = make([]*Button, len(bb.Actions))
-		for i, btn := range bb.Actions {
-			if btn != nil {
-				translated := translateButton(*btn, lang, appTrans)
-				result.Actions[i] = &translated
-			}
-		}
-	}
-
-	return result
-}
-
-// translateButton translates button label.
-func translateButton(btn Button, lang string, appTrans map[string]map[string]string) Button {
-	btn.Label = TranslateString(btn.Label, lang, appTrans)
-	return btn
-}
-
-// translateContent translates content based on its type.
-func translateContent(content any, lang string, appTrans map[string]map[string]string) any {
-	switch c := content.(type) {
-	case string:
-		return TranslateString(c, lang, appTrans)
-
-	case []Choice:
-		result := make([]Choice, len(c))
-		for i, choice := range c {
-			result[i] = Choice{
-				Label:       TranslateString(choice.Label, lang, appTrans),
-				Description: TranslateString(choice.Description, lang, appTrans),
-				Value:       choice.Value, // Don't translate values
-			}
-		}
-		return result
-
-	case MultiChoice:
-		choices := make([]Choice, len(c.Choices))
-		for i, choice := range c.Choices {
-			choices[i] = Choice{
-				Label:       TranslateString(choice.Label, lang, appTrans),
-				Description: TranslateString(choice.Description, lang, appTrans),
-				Value:       choice.Value,
-			}
-		}
-		return MultiChoice{Choices: choices, Selected: c.Selected}
-
-	case []MenuItem:
-		result := make([]MenuItem, len(c))
-		for i, item := range c {
-			result[i] = MenuItem{
-				Title:       TranslateString(item.Title, lang, appTrans),
-				Description: TranslateString(item.Description, lang, appTrans),
-				Icon:        item.Icon,
-			}
-		}
-		return result
-
-	case []FormField:
-		result := make([]FormField, len(c))
-		for i, field := range c {
-			result[i] = FormField{
-				ID:          field.ID,
-				Type:        field.Type,
-				Label:       TranslateString(field.Label, lang, appTrans),
-				Placeholder: TranslateString(field.Placeholder, lang, appTrans),
-				Default:     field.Default,
-				Options:     field.Options, // Don't translate option values
-				Required:    field.Required,
-			}
-		}
-		return result
-
-	case WelcomeConfig:
-		return WelcomeConfig{
-			Logo:             c.Logo,
-			LogoHeight:       c.LogoHeight,
-			Title:            TranslateString(c.Title, lang, appTrans),
-			Message:          TranslateString(c.Message, lang, appTrans),
-			LanguageSelector: c.LanguageSelector,
-		}
-
-	case LicenseConfig:
-		return LicenseConfig{
-			Title:   TranslateString(c.Title, lang, appTrans),
-			Label:   TranslateString(c.Label, lang, appTrans),
-			Content: c.Content, // Don't translate license text
-		}
-
-	case ConfirmCheckboxConfig:
-		return ConfirmCheckboxConfig{
-			Title:          TranslateString(c.Title, lang, appTrans),
-			Message:        TranslateString(c.Message, lang, appTrans),
-			CheckboxLabel:  TranslateString(c.CheckboxLabel, lang, appTrans),
-			WarningMessage: TranslateString(c.WarningMessage, lang, appTrans),
-		}
-
-	case SummaryConfig:
-		items := make([]SummaryItem, len(c.Items))
-		for i, item := range c.Items {
-			items[i] = SummaryItem{
-				Label: TranslateString(item.Label, lang, appTrans),
-				Value: item.Value, // Don't translate literal values
-			}
-		}
-		return SummaryConfig{Items: items}
-
-	case ReviewConfig:
-		return ReviewConfig{
-			Content:  c.Content, // Don't translate review content
-			OnCopy:   c.OnCopy,
-			OnSave:   c.OnSave,
-			Subtitle: TranslateString(c.Subtitle, lang, appTrans),
-		}
-
-	default:
-		// ProgressConfig, LogConfig, FileListConfig - no translatable strings
-		return content
-	}
-}
-
 // renderPage generates the complete HTML for a flow page.
-// The lang parameter is injected into the page for frontend translation.
-// Translation is handled by the frontend i18n.js using the provided language.
-func renderPage(page Page, darkMode bool, primaryLight, primaryDark, lang string, appTrans map[string]map[string]string) string {
-	// Note: Translation keys are preserved in the HTML and translated by the frontend.
-	// This allows the frontend to re-translate when the user changes language on the current page.
-	// The backend stores the language so subsequent pages also use the correct language.
+// Translation is performed immediately by T()/TF() - no frontend translation needed.
+// Call SetLanguage() before calling this function to ensure correct language.
+func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) string {
+	// T() and TF() translate strings immediately using the package-level currentLanguage.
+	// The frontend still needs i18n.js for the language selector to display language names.
 
 	var buf bytes.Buffer
 
@@ -257,6 +86,11 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark, lang string
 
 	// Footer with buttons - prefer ButtonBar over legacy Buttons array
 	buf.WriteString(renderButtonBar(page))
+
+	// Get current language for frontend language selector
+	langMu.RLock()
+	lang := currentLanguage
+	langMu.RUnlock()
 
 	buf.WriteString(`    </div>
     <script>window._currentLanguage = "` + lang + `";</script>

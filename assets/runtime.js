@@ -126,6 +126,7 @@
     }
 
     // Update progress bar (called from Go)
+    // Status text arrives fully translated from the backend.
     window.updateProgress = function(percent, status) {
         const bar = document.querySelector('.progress-bar');
         const statusEl = document.querySelector('.progress-status');
@@ -134,7 +135,7 @@
             bar.style.width = percent + '%';
         }
         if (statusEl && status) {
-            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
+            statusEl.textContent = status;
         }
     };
 
@@ -162,7 +163,7 @@
     window.logSetStatus = function(status) {
         const statusEl = document.getElementById('log-status');
         if (statusEl) {
-            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
+            statusEl.textContent = status;
         }
     };
 
@@ -221,14 +222,14 @@
     window.fileListSetProgress = function(text) {
         const progressEl = document.getElementById('filelist-progress');
         if (progressEl) {
-            progressEl.textContent = window.i18n ? window.i18n.translate(text) : text;
+            progressEl.textContent = text;
         }
     };
 
     window.fileListSetStatus = function(status) {
         const statusEl = document.getElementById('filelist-status');
         if (statusEl) {
-            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
+            statusEl.textContent = status;
         }
     };
 
@@ -334,20 +335,9 @@
     };
 
     // Change language (for welcome page language selector)
+    // Backend re-renders the page in the new language, so frontend only notifies backend.
     window.changeLanguage = function(lang) {
-        // Notify backend of language change - backend will translate subsequent pages
         sendMessage('change_language', { data: { language: lang } });
-
-        // Also update frontend i18n for immediate feedback on current page
-        if (window.i18n) {
-            window.i18n.setLanguage(lang);
-            // Defer DOM updates to next event loop tick to allow native popup to fully dismiss.
-            // This fixes crashes on macOS/iOS where WKWebView's <select> popup cleanup
-            // conflicts with immediate DOM manipulation.
-            setTimeout(function() {
-                window.i18n.retranslatePage();
-            }, 0);
-        }
     };
 
     // Initialize language selector options (called after i18n is ready)
@@ -402,23 +392,18 @@
         }
     }
 
-    // Initialize page (focus, translation, and language selector)
+    // Initialize page (focus and language selector)
+    // Translation is now done by the backend - HTML arrives fully translated.
     function initPage() {
-        // Initialize translations (merges library + app translations)
-        // Must be called here because appTranslations is defined after i18n.js loads
+        // Initialize translations for language selector to show language names
         if (window.i18n && window.i18n.init) {
             window.i18n.init();
         }
-        // Set language from backend BEFORE translating
-        // This ensures the page is translated in the correct language on load
+        // Set language for i18n to know which language is selected in the dropdown
         if (window._currentLanguage && window.i18n && window.i18n.setLanguage) {
             window.i18n.setLanguage(window._currentLanguage);
         }
-        // Translate all text on the page
-        if (window.i18n && window.i18n.translatePage) {
-            window.i18n.translatePage();
-        }
-        // Initialize language selector if present
+        // Initialize language selector if present (needs i18n for language names)
         initLanguageSelector();
         // Set up focus
         initFocus();

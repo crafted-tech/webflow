@@ -78,40 +78,42 @@ func main() {
 		case stepWelcome:
 			// Welcome page with logo and language selector
 			// Use library's welcome.title/message with app name substitution
-			result := f.ShowWelcome(webflow.WelcomeConfig{
+			resp := f.ShowWelcome(webflow.WelcomeConfig{
 				Logo:             logoSVG,
 				LogoHeight:       64,
 				Title:            TF("welcome.title", appName),
 				Message:          TF("welcome.message", appName),
 				LanguageSelector: true,
 			})
-			if result == webflow.ButtonResultClose {
+			if webflow.IsClose(resp) {
 				return
+			}
+			if webflow.LanguageChanged(resp) {
+				continue
 			}
 			step = stepLicense
 
 		case stepLicense:
 			// License agreement - use ShowMessage for full back navigation support
-			// (ShowLicense returns bool, which can't distinguish Back from Close)
-			_, result := f.ShowMessage(
+			resp := f.ShowMessage(
 				T("license.title"),
 				licenseText,
 				webflow.WithSubtitle(T("license.label")),
 				webflow.WithButtonBar(webflow.WizardLicense()),
 				webflow.WithBorderedContent(),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepWelcome
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
 			step = stepInstallType
 
 		case stepInstallType:
 			// Installation type selection with translated options
-			idx, _, result := f.ShowChoice(
+			resp := f.ShowChoice(
 				T("installType.title"),
 				[]string{
 					T("installType.full"),
@@ -120,14 +122,14 @@ func main() {
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepLicense
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
-			installType = idx
+			installType = resp.(int)
 			if installType == 2 {
 				step = stepComponents
 			} else {
@@ -136,7 +138,7 @@ func main() {
 
 		case stepComponents:
 			// Custom component selection with translated labels
-			components, _, result := f.ShowMultiChoice(
+			resp := f.ShowMultiChoice(
 				T("components.title"),
 				[]string{
 					T("components.core"),
@@ -147,15 +149,16 @@ func main() {
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepInstallType
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
+			components := resp.([]int)
 			if len(components) == 0 {
-				_, noCompResult := f.ShowMessage(
+				noCompResp := f.ShowMessage(
 					T("noComponents.title"),
 					T("noComponents.message"),
 					webflow.WithButtonBar(webflow.ButtonBar{
@@ -163,10 +166,10 @@ func main() {
 						Close: webflow.NewButton(T("button.close"), webflow.ButtonClose),
 					}),
 				)
-				switch noCompResult {
-				case webflow.ButtonResultBack:
+				if webflow.IsBack(noCompResp) {
 					continue // Stay on component selection
-				case webflow.ButtonResultClose:
+				}
+				if webflow.IsClose(noCompResp) {
 					return
 				}
 			}
@@ -175,24 +178,24 @@ func main() {
 
 		case stepUserInfo:
 			// Get user name
-			name, result := f.ShowTextInput(
+			resp := f.ShowTextInput(
 				T("userInfo.title"),
 				T("userInfo.prompt"),
 				userName,
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				if installType == 2 {
 					step = stepComponents
 				} else {
 					step = stepInstallType
 				}
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
-			userName = name
+			userName = resp.(string)
 			if userName == "" {
 				userName = "User"
 			}
@@ -200,7 +203,7 @@ func main() {
 
 		case stepDirectory:
 			// Installation directory
-			dirResult, _, result := f.ShowForm(
+			resp := f.ShowForm(
 				T("directory.title"),
 				[]webflow.FormField{
 					{
@@ -212,21 +215,22 @@ func main() {
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepUserInfo
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
-			if path, ok := dirResult["install_path"].(string); ok && path != "" {
+			formData := resp.(map[string]any)
+			if path, ok := formData["install_path"].(string); ok && path != "" {
 				installPath = path
 			}
 			step = stepConfig
 
 		case stepConfig:
 			// Configuration form with translated labels
-			cfg, _, result := f.ShowForm(
+			resp := f.ShowForm(
 				T("config.title"),
 				[]webflow.FormField{
 					{
@@ -255,14 +259,14 @@ func main() {
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepDirectory
 				continue
-			case webflow.ButtonResultClose:
+			}
+			if webflow.IsClose(resp) {
 				return
 			}
-			config = cfg
+			config = resp.(map[string]any)
 			step = stepReady
 
 		case stepReady:
@@ -302,32 +306,31 @@ func main() {
 				})
 			}
 
-			_, result := f.ShowMessage(
+			resp := f.ShowMessage(
 				T("ready.title"),
 				webflow.SummaryConfig{Items: summaryItems},
 				webflow.WithButtonBar(webflow.WizardInstall()),
 			)
-			switch result {
-			case webflow.ButtonResultBack:
+			if webflow.IsBack(resp) {
 				step = stepConfig
-			case webflow.ButtonResultClose:
+			} else if webflow.IsClose(resp) {
 				f.ShowMessage(T("cancelled.title"),
 					T("cancelled.message"),
 					webflow.WithButtonBar(webflow.SimpleClose()))
 				return
-			case webflow.ButtonResultNext:
+			} else {
 				step = stepConfirm
 			}
 
 		case stepConfirm:
 			// Confirmation with checkbox using ShowConfirmWithCheckbox
-			ok := f.ShowConfirmWithCheckbox(webflow.ConfirmCheckboxConfig{
+			resp := f.ShowConfirmWithCheckbox(webflow.ConfirmCheckboxConfig{
 				Title:          T("confirm.title"),
 				Message:        TF("confirm.message", appName),
 				CheckboxLabel:  T("confirm.checkbox"),
 				WarningMessage: T("confirm.warning"),
 			})
-			if !ok {
+			if resp != true {
 				step = stepReady
 				continue
 			}
@@ -337,7 +340,7 @@ func main() {
 
 	// Show installation progress with translated status messages
 	// Use library's installing.* keys
-	completed := f.ShowProgress(T("installing.title"), func(p webflow.Progress) {
+	progressResp := f.ShowProgress(T("installing.title"), func(p webflow.Progress) {
 		steps := []struct {
 			progress float64
 			status   string
@@ -362,7 +365,7 @@ func main() {
 		}
 	})
 
-	if !completed {
+	if webflow.IsClose(progressResp) {
 		f.ShowMessage(T("cancelled.title"),
 			T("cancelled.message"),
 			webflow.WithButtonBar(webflow.SimpleClose()))
@@ -434,16 +437,16 @@ func main() {
 	// Completion page with Details button for log viewing
 	// Use library's complete.title/message with app name substitution
 	for {
-		_, result := f.ShowMessage(
+		resp := f.ShowMessage(
 			T("complete.title"),
 			TF("complete.message", appName),
 			webflow.WithButtonBar(webflow.ButtonBar{
-				Left: webflow.NewButton(T("button.details"), "left"),
+				Left: webflow.NewButton(T("button.details"), "details"),
 				Next: webflow.NewButton(T("button.finish"), webflow.ButtonClose).WithPrimary(),
 			}),
 		)
 
-		if result == webflow.ButtonResultLeft {
+		if webflow.IsButton(resp, "details") {
 			// User clicked Details - show log review with save option
 			f.ShowReviewWithSave(T("log.title"), logText,
 				func() {
