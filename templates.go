@@ -2,10 +2,15 @@ package webflow
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html"
 	"strings"
 )
+
+// selectChevron is the SVG chevron icon for select dropdowns.
+// Uses currentColor to inherit text color from CSS.
+const selectChevron = `<svg class="select-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 4L6 8L9 4z"/></svg>`
 
 // renderPage generates the complete HTML for a flow page.
 func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) string {
@@ -78,6 +83,8 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 	buf.WriteString(renderButtonBar(page))
 
 	buf.WriteString(`    </div>
+    <script>` + i18nJSContent + `</script>
+    <script>` + getAppTranslationsJS() + `</script>
     <script>` + jsContent + `</script>
 </body>
 </html>`)
@@ -141,6 +148,14 @@ func renderContent(content any) string {
 		return renderFileListView()
 	case ReviewConfig:
 		return renderReviewView(c)
+	case WelcomeConfig:
+		return renderWelcomeView(c)
+	case LicenseConfig:
+		return renderLicenseView(c)
+	case ConfirmCheckboxConfig:
+		return renderConfirmCheckboxView(c)
+	case SummaryConfig:
+		return renderSummaryView(c)
 	default:
 		return ""
 	}
@@ -387,7 +402,8 @@ func renderFormField(field FormField) string {
 	case FieldSelect:
 		buf.WriteString(fmt.Sprintf(`                <div class="form-group-inline">
                     <label class="form-label" for="%s">%s</label>
-                    <select id="%s" class="form-input form-select">
+                    <div class="select-wrapper">
+                        <select id="%s" class="form-input">
 `, html.EscapeString(field.ID), html.EscapeString(field.Label), html.EscapeString(field.ID)))
 
 		defaultVal := ""
@@ -400,11 +416,13 @@ func renderFormField(field FormField) string {
 			if opt == defaultVal {
 				selected = " selected"
 			}
-			buf.WriteString(fmt.Sprintf(`                        <option value="%s"%s>%s</option>
+			buf.WriteString(fmt.Sprintf(`                            <option value="%s"%s>%s</option>
 `, html.EscapeString(opt), selected, html.EscapeString(opt)))
 		}
 
-		buf.WriteString(`                    </select>
+		buf.WriteString(`                        </select>
+                        ` + selectChevron + `
+                    </div>
                 </div>
 `)
 	}
@@ -456,6 +474,142 @@ func renderReviewView(cfg ReviewConfig) string {
             </div>
 `, html.EscapeString(cfg.Content)))
 	return buf.String()
+}
+
+// renderWelcomeView renders a welcome page with optional logo and language selector.
+func renderWelcomeView(cfg WelcomeConfig) string {
+	var buf bytes.Buffer
+
+	buf.WriteString(`            <div class="welcome-container">
+`)
+	// Logo
+	if len(cfg.Logo) > 0 {
+		logoHeight := cfg.LogoHeight
+		if logoHeight == 0 {
+			logoHeight = 64
+		}
+		// Check if it's SVG or PNG based on content
+		logoData := string(cfg.Logo)
+		if strings.HasPrefix(logoData, "<svg") || strings.HasPrefix(logoData, "<?xml") {
+			// SVG - render inline
+			buf.WriteString(fmt.Sprintf(`                <div class="welcome-logo" style="height: %dpx;">%s</div>
+`, logoHeight, logoData))
+		} else {
+			// Binary data (PNG/etc) - use data URI
+			// For simplicity, assume PNG
+			encoded := "data:image/png;base64," + encodeBase64(cfg.Logo)
+			buf.WriteString(fmt.Sprintf(`                <div class="welcome-logo"><img src="%s" alt="Logo" style="height: %dpx;"></div>
+`, encoded, logoHeight))
+		}
+	}
+
+	// Title
+	if cfg.Title != "" {
+		// Don't HTML-escape translation strings - they contain control characters
+		// and JSON that need to be parsed by JavaScript as-is
+		buf.WriteString(fmt.Sprintf(`                <h2 class="welcome-title">%s</h2>
+`, cfg.Title))
+	}
+
+	// Message
+	if cfg.Message != "" {
+		// Don't HTML-escape translation strings - they contain control characters
+		// and JSON that need to be parsed by JavaScript as-is
+		// Convert newlines to <br> for display
+		formattedMsg := strings.ReplaceAll(cfg.Message, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`                <p class="welcome-message">%s</p>
+`, formattedMsg))
+	}
+
+	// Language selector
+	if cfg.LanguageSelector {
+		buf.WriteString(`                <div class="welcome-language">
+                    <label class="form-label" for="language-select">` + T("welcome.languageLabel") + `</label>
+                    <div class="select-wrapper">
+                        <select id="language-select" class="form-input" onchange="window.changeLanguage(this.value)">
+                        </select>
+                        ` + selectChevron + `
+                    </div>
+                </div>
+`)
+	}
+
+	buf.WriteString(`            </div>
+`)
+	return buf.String()
+}
+
+// renderLicenseView renders a license agreement page.
+func renderLicenseView(cfg LicenseConfig) string {
+	var buf bytes.Buffer
+
+	// Label/instruction text
+	if cfg.Label != "" {
+		buf.WriteString(fmt.Sprintf(`            <p class="license-label">%s</p>
+`, html.EscapeString(cfg.Label)))
+	}
+
+	// License content in a bordered scrollable area
+	buf.WriteString(fmt.Sprintf(`            <div class="license-content">%s</div>
+`, html.EscapeString(cfg.Content)))
+
+	return buf.String()
+}
+
+// renderConfirmCheckboxView renders a confirmation dialog with a required checkbox.
+func renderConfirmCheckboxView(cfg ConfirmCheckboxConfig) string {
+	var buf bytes.Buffer
+
+	// Message
+	if cfg.Message != "" {
+		escapedMsg := html.EscapeString(cfg.Message)
+		formattedMsg := strings.ReplaceAll(escapedMsg, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`            <p class="flow-message">%s</p>
+`, formattedMsg))
+	}
+
+	// Warning message (if any)
+	if cfg.WarningMessage != "" {
+		escapedWarn := html.EscapeString(cfg.WarningMessage)
+		formattedWarn := strings.ReplaceAll(escapedWarn, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`            <div class="confirm-warning">%s</div>
+`, formattedWarn))
+	}
+
+	// Required checkbox
+	if cfg.CheckboxLabel != "" {
+		buf.WriteString(fmt.Sprintf(`            <div class="form-group">
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="_confirm_checkbox" class="form-checkbox" onchange="window.updateConfirmButton(this.checked)">
+                    <label class="form-label" for="_confirm_checkbox">%s</label>
+                </div>
+            </div>
+`, html.EscapeString(cfg.CheckboxLabel)))
+	}
+
+	return buf.String()
+}
+
+// renderSummaryView renders a summary with labeled key-value pairs.
+// Labels can contain translation keys (with \x01 prefix) which the frontend will translate.
+// Values are rendered as literal text.
+func renderSummaryView(cfg SummaryConfig) string {
+	var buf bytes.Buffer
+	buf.WriteString(`            <dl class="summary-list">
+`)
+	for _, item := range cfg.Items {
+		buf.WriteString(fmt.Sprintf(`                <dt>%s</dt>
+                <dd>%s</dd>
+`, html.EscapeString(item.Label), html.EscapeString(item.Value)))
+	}
+	buf.WriteString(`            </dl>
+`)
+	return buf.String()
+}
+
+// encodeBase64 encodes bytes to base64 string.
+func encodeBase64(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
 }
 
 // renderButtonBar renders the button bar with fixed positions.

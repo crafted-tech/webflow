@@ -134,7 +134,7 @@
             bar.style.width = percent + '%';
         }
         if (statusEl && status) {
-            statusEl.textContent = status;
+            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
         }
     };
 
@@ -162,7 +162,7 @@
     window.logSetStatus = function(status) {
         const statusEl = document.getElementById('log-status');
         if (statusEl) {
-            statusEl.textContent = status;
+            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
         }
     };
 
@@ -221,14 +221,14 @@
     window.fileListSetProgress = function(text) {
         const progressEl = document.getElementById('filelist-progress');
         if (progressEl) {
-            progressEl.textContent = text;
+            progressEl.textContent = window.i18n ? window.i18n.translate(text) : text;
         }
     };
 
     window.fileListSetStatus = function(status) {
         const statusEl = document.getElementById('filelist-status');
         if (statusEl) {
-            statusEl.textContent = status;
+            statusEl.textContent = window.i18n ? window.i18n.translate(status) : status;
         }
     };
 
@@ -318,6 +318,53 @@
         });
     };
 
+    // Update confirm button enabled state based on checkbox (for ShowConfirmWithCheckbox)
+    window.updateConfirmButton = function(checked) {
+        // Find the primary button (Next/Install) and enable/disable it
+        var primaryBtn = document.querySelector('.btn-primary[data-button]');
+        if (primaryBtn) {
+            if (checked) {
+                primaryBtn.classList.remove('btn-disabled');
+                primaryBtn.disabled = false;
+            } else {
+                primaryBtn.classList.add('btn-disabled');
+                primaryBtn.disabled = true;
+            }
+        }
+    };
+
+    // Change language (for welcome page language selector)
+    window.changeLanguage = function(lang) {
+        if (window.i18n) {
+            window.i18n.setLanguage(lang);
+            // Re-translate the page using stored keys
+            window.i18n.retranslatePage();
+        }
+    };
+
+    // Initialize language selector options (called after i18n is ready)
+    function initLanguageSelector() {
+        var select = document.getElementById('language-select');
+        if (!select || !window.i18n) return;
+
+        var languages = window.i18n.getAvailableLanguages();
+        var currentLang = window.i18n.getLanguage();
+
+        // Clear existing options
+        select.innerHTML = '';
+
+        // Add language options
+        languages.forEach(function(lang) {
+            var option = document.createElement('option');
+            option.value = lang.code;
+            option.textContent = lang.name;
+            if (lang.code === currentLang) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
+
     // Focus management on page load
     // If page has focusable content, focus first content element
     // If page has no focusable content, focus the primary/default button
@@ -347,18 +394,31 @@
         }
     }
 
-    // Run focus logic immediately if DOM is ready, otherwise wait
+    // Initialize page (focus, translation, and language selector)
+    function initPage() {
+        // Initialize translations (merges library + app translations)
+        // Must be called here because appTranslations is defined after i18n.js loads
+        if (window.i18n && window.i18n.init) {
+            window.i18n.init();
+        }
+        // Translate all text on the page
+        if (window.i18n && window.i18n.translatePage) {
+            window.i18n.translatePage();
+        }
+        // Initialize language selector if present
+        initLanguageSelector();
+        // Set up focus
+        initFocus();
+        // Notify Go that page is ready
+        sendMessage('page_ready', {});
+    }
+
+    // Run initialization when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            initFocus();
-            // Notify Go that page is ready for focus
-            sendMessage('page_ready', {});
-        });
+        document.addEventListener('DOMContentLoaded', initPage);
     } else {
         // DOM already ready (script is at end of body)
-        initFocus();
-        // Notify Go that page is ready for focus
-        sendMessage('page_ready', {});
+        initPage();
     }
 
     // Get all visible buttons in footer for arrow navigation

@@ -1,0 +1,1072 @@
+// i18n.js - Frontend translation system for webflow
+// Translations are based on Inno Setup's open-source language files.
+
+(function() {
+    'use strict';
+
+    const TRANSLATION_PREFIX = '\x01';
+    const ARG_SEPARATOR = '\x02';
+
+    // Built-in library translations for 12 languages
+    const libraryTranslations = {
+        "en": {
+            "_name": "English",
+            "button.back": "Back",
+            "button.next": "Next",
+            "button.install": "Install",
+            "button.ok": "OK",
+            "button.cancel": "Cancel",
+            "button.yes": "Yes",
+            "button.no": "No",
+            "button.finish": "Finish",
+            "button.close": "Close",
+            "button.details": "Details",
+            "button.copyToClipboard": "Copy to Clipboard",
+            "button.saveToFile": "Save to File",
+            "button.actions": "Actions",
+            "button.continue": "Continue",
+            "button.iAgree": "I Agree",
+            "language.title": "Select Setup Language",
+            "language.label": "Select the language to use during the installation:",
+            "language.select": "Language:",
+            "welcome.title": "Welcome to the {0} Setup Wizard",
+            "welcome.message": "This will install {0} on your computer.\n\nIt is recommended that you close all other applications before continuing.",
+            "welcome.languageLabel": "Language:",
+            "license.title": "License Agreement",
+            "license.label": "Please read the following License Agreement. You must accept the terms of this agreement before continuing with the installation.",
+            "license.accept": "Accept",
+            "license.decline": "Decline",
+            "ready.title": "Ready to Install",
+            "ready.message": "Setup is now ready to begin installing {0} on your computer.",
+            "ready.location": "Destination location:",
+            "ready.continue": "Click Install to continue with the installation, or click Back if you want to review or change any settings.",
+            "installing.title": "Installing",
+            "installing.message": "Please wait while Setup installs {0} on your computer.",
+            "installing.creatingDirs": "Creating destination directory...",
+            "installing.copyingFiles": "Installing program files...",
+            "installing.uninstaller": "Installing uninstaller...",
+            "installing.permissions": "Configuring data directory...",
+            "installing.creatingShortcuts": "Creating shortcuts...",
+            "installing.creatingRegistry": "Creating registry entries...",
+            "installing.completing": "Completing installation...",
+            "complete.title": "Setup Complete",
+            "complete.message": "Setup has finished installing {0} on your computer.",
+            "complete.launchHint": "The application may be launched from the Start Menu.",
+            "uninstall.title": "Uninstall",
+            "uninstall.confirm": "This will remove the {0} application.\n\nYour data and settings will remain intact.\n\nDo you want to continue?",
+            "uninstall.complete": "Uninstall Complete",
+            "uninstall.completeMessage": "The {0} application has been removed.\n\nYour data files remain in the AppData folder.",
+            "uninstall.removing": "Removing...",
+            "uninstall.removingRegistry": "Removing registry entries...",
+            "uninstall.removingShortcuts": "Removing shortcuts...",
+            "uninstall.removingFiles": "Removing program files...",
+            "uninstall.cleanup": "Scheduling cleanup...",
+            "uninstall.removingFolder": "Removing installation folder...",
+            "error.title": "Error",
+            "error.installFailed": "Installation Failed",
+            "error.uninstallFailed": "Uninstallation Failed",
+            "error.closeAppFailed": "Failed to close the application: {0}\n\nPlease close it manually and try again.",
+            "upgrade.title": "Upgrade Installation",
+            "reinstall.title": "Reinstall",
+            "downgrade.title": "Downgrade Installation",
+            "existing.detected": "{0} version {1} is currently installed.",
+            "upgrade.message": "This installer will upgrade to version {0}.",
+            "reinstall.message": "This installer will reinstall version {0}.",
+            "downgrade.message": "You are about to downgrade to version {0}.",
+            "downgrade.warning": "Warning: Downgrading may cause compatibility issues with existing data files or settings.",
+            "downgrade.acknowledge": "I understand the risks and want to proceed with the downgrade",
+            "confirm.continue": "Do you want to continue?",
+            "log.title": "Setup Log",
+            "log.saveTitle": "Save Log"
+        },
+        "de": {
+            "_name": "Deutsch",
+            "button.back": "Zurück",
+            "button.next": "Weiter",
+            "button.install": "Installieren",
+            "button.ok": "OK",
+            "button.cancel": "Abbrechen",
+            "button.yes": "Ja",
+            "button.no": "Nein",
+            "button.finish": "Fertig stellen",
+            "button.close": "Schließen",
+            "button.details": "Details",
+            "button.copyToClipboard": "In Zwischenablage kopieren",
+            "button.saveToFile": "In Datei speichern",
+            "button.actions": "Aktionen",
+            "button.continue": "Fortfahren",
+            "button.iAgree": "Ich stimme zu",
+            "language.title": "Sprache für das Setup wählen",
+            "language.label": "Wählen Sie die Sprache, die während der Installation verwendet werden soll:",
+            "language.select": "Sprache:",
+            "welcome.title": "Willkommen beim {0} Setup-Assistenten",
+            "welcome.message": "Dieses Programm wird {0} auf Ihrem Computer installieren.\n\nEs wird empfohlen, alle anderen Anwendungen zu schließen, bevor Sie fortfahren.",
+            "welcome.languageLabel": "Sprache:",
+            "license.title": "Lizenzvereinbarung",
+            "license.label": "Bitte lesen Sie die folgende Lizenzvereinbarung. Sie müssen den Bedingungen zustimmen, um mit der Installation fortzufahren.",
+            "license.accept": "Akzeptieren",
+            "license.decline": "Ablehnen",
+            "ready.title": "Bereit zur Installation",
+            "ready.message": "Das Setup ist jetzt bereit, {0} auf Ihrem Computer zu installieren.",
+            "ready.location": "Zielverzeichnis:",
+            "ready.continue": "Klicken Sie auf Installieren, um fortzufahren, oder auf Zurück, um Einstellungen zu überprüfen.",
+            "installing.title": "Installation",
+            "installing.message": "Bitte warten Sie, während {0} auf Ihrem Computer installiert wird.",
+            "installing.creatingDirs": "Zielverzeichnis wird erstellt...",
+            "installing.copyingFiles": "Programmdateien werden installiert...",
+            "installing.uninstaller": "Deinstallationsprogramm wird installiert...",
+            "installing.permissions": "Datenverzeichnis wird konfiguriert...",
+            "installing.creatingShortcuts": "Verknüpfungen werden erstellt...",
+            "installing.creatingRegistry": "Registrierungseinträge werden erstellt...",
+            "installing.completing": "Installation wird abgeschlossen...",
+            "complete.title": "Setup abgeschlossen",
+            "complete.message": "Die Installation von {0} auf Ihrem Computer ist abgeschlossen.",
+            "complete.launchHint": "Die Anwendung kann über das Startmenü gestartet werden.",
+            "uninstall.title": "Deinstallieren",
+            "uninstall.confirm": "Die Anwendung {0} wird entfernt.\n\nIhre Daten und Einstellungen bleiben erhalten.\n\nMöchten Sie fortfahren?",
+            "uninstall.complete": "Deinstallation abgeschlossen",
+            "uninstall.completeMessage": "Die Anwendung {0} wurde entfernt.\n\nIhre Datendateien verbleiben im AppData-Ordner.",
+            "uninstall.removing": "Wird entfernt...",
+            "uninstall.removingRegistry": "Registrierungseinträge werden entfernt...",
+            "uninstall.removingShortcuts": "Verknüpfungen werden entfernt...",
+            "uninstall.removingFiles": "Programmdateien werden entfernt...",
+            "uninstall.cleanup": "Bereinigung wird geplant...",
+            "uninstall.removingFolder": "Installationsordner wird entfernt...",
+            "error.title": "Fehler",
+            "error.installFailed": "Installation fehlgeschlagen",
+            "error.uninstallFailed": "Deinstallation fehlgeschlagen",
+            "error.closeAppFailed": "Anwendung konnte nicht geschlossen werden: {0}\n\nBitte schließen Sie sie manuell und versuchen Sie es erneut.",
+            "upgrade.title": "Upgrade-Installation",
+            "reinstall.title": "Neuinstallation",
+            "downgrade.title": "Downgrade-Installation",
+            "existing.detected": "{0} Version {1} ist derzeit installiert.",
+            "upgrade.message": "Dieses Installationsprogramm wird auf Version {0} aktualisieren.",
+            "reinstall.message": "Dieses Installationsprogramm wird Version {0} neu installieren.",
+            "downgrade.message": "Sie sind dabei, auf Version {0} herunterzustufen.",
+            "downgrade.warning": "Warnung: Ein Downgrade kann zu Kompatibilitätsproblemen mit vorhandenen Datendateien oder Einstellungen führen.",
+            "downgrade.acknowledge": "Ich verstehe die Risiken und möchte mit dem Downgrade fortfahren",
+            "confirm.continue": "Möchten Sie fortfahren?",
+            "log.title": "Setup-Protokoll",
+            "log.saveTitle": "Protokoll speichern"
+        },
+        "es": {
+            "_name": "Español",
+            "button.back": "Atrás",
+            "button.next": "Siguiente",
+            "button.install": "Instalar",
+            "button.ok": "Aceptar",
+            "button.cancel": "Cancelar",
+            "button.yes": "Sí",
+            "button.no": "No",
+            "button.finish": "Finalizar",
+            "button.close": "Cerrar",
+            "button.details": "Detalles",
+            "button.copyToClipboard": "Copiar al portapapeles",
+            "button.saveToFile": "Guardar en archivo",
+            "button.actions": "Acciones",
+            "button.continue": "Continuar",
+            "button.iAgree": "Acepto",
+            "language.title": "Seleccione el Idioma de la Instalación",
+            "language.label": "Seleccione el idioma a utilizar durante la instalación:",
+            "language.select": "Idioma:",
+            "welcome.title": "Bienvenido al asistente de instalación de {0}",
+            "welcome.message": "Este programa instalará {0} en su sistema.\n\nSe recomienda cerrar todas las demás aplicaciones antes de continuar.",
+            "welcome.languageLabel": "Idioma:",
+            "license.title": "Acuerdo de Licencia",
+            "license.label": "Por favor, lea el siguiente acuerdo de licencia. Debe aceptar las cláusulas de este acuerdo antes de continuar con la instalación.",
+            "license.accept": "Aceptar",
+            "license.decline": "Rechazar",
+            "ready.title": "Listo para Instalar",
+            "ready.message": "El programa de instalación está listo para instalar {0} en su sistema.",
+            "ready.location": "Carpeta de destino:",
+            "ready.continue": "Haga clic en Instalar para continuar con la instalación, o haga clic en Atrás para revisar la configuración.",
+            "installing.title": "Instalando",
+            "installing.message": "Por favor espere mientras se instala {0} en su sistema.",
+            "installing.creatingDirs": "Creando carpeta de destino...",
+            "installing.copyingFiles": "Instalando archivos del programa...",
+            "installing.uninstaller": "Instalando desinstalador...",
+            "installing.permissions": "Configurando carpeta de datos...",
+            "installing.creatingShortcuts": "Creando accesos directos...",
+            "installing.creatingRegistry": "Creando entradas de registro...",
+            "installing.completing": "Completando instalación...",
+            "complete.title": "Instalación Completada",
+            "complete.message": "La instalación de {0} en su sistema ha finalizado.",
+            "complete.launchHint": "La aplicación puede iniciarse desde el menú Inicio.",
+            "uninstall.title": "Desinstalar",
+            "uninstall.confirm": "Se eliminará la aplicación {0}.\n\nSus datos y configuraciones permanecerán intactos.\n\n¿Desea continuar?",
+            "uninstall.complete": "Desinstalación Completada",
+            "uninstall.completeMessage": "La aplicación {0} ha sido eliminada.\n\nSus archivos de datos permanecen en la carpeta AppData.",
+            "uninstall.removing": "Eliminando...",
+            "uninstall.removingRegistry": "Eliminando entradas de registro...",
+            "uninstall.removingShortcuts": "Eliminando accesos directos...",
+            "uninstall.removingFiles": "Eliminando archivos del programa...",
+            "uninstall.cleanup": "Programando limpieza...",
+            "uninstall.removingFolder": "Eliminando carpeta de instalación...",
+            "error.title": "Error",
+            "error.installFailed": "Error en la instalación",
+            "error.uninstallFailed": "Error en la desinstalación",
+            "error.closeAppFailed": "No se pudo cerrar la aplicación: {0}\n\nPor favor, ciérrela manualmente e intente de nuevo.",
+            "upgrade.title": "Actualización",
+            "reinstall.title": "Reinstalar",
+            "downgrade.title": "Degradar versión",
+            "existing.detected": "{0} versión {1} está actualmente instalado.",
+            "upgrade.message": "Este instalador actualizará a la versión {0}.",
+            "reinstall.message": "Este instalador reinstalará la versión {0}.",
+            "downgrade.message": "Está a punto de degradar a la versión {0}.",
+            "downgrade.warning": "Advertencia: La degradación puede causar problemas de compatibilidad con archivos de datos o configuraciones existentes.",
+            "downgrade.acknowledge": "Entiendo los riesgos y deseo continuar con la degradación",
+            "confirm.continue": "¿Desea continuar?",
+            "log.title": "Registro de instalación",
+            "log.saveTitle": "Guardar registro"
+        },
+        "fr": {
+            "_name": "Français",
+            "button.back": "Précédent",
+            "button.next": "Suivant",
+            "button.install": "Installer",
+            "button.ok": "OK",
+            "button.cancel": "Annuler",
+            "button.yes": "Oui",
+            "button.no": "Non",
+            "button.finish": "Terminer",
+            "button.close": "Fermer",
+            "button.details": "Détails",
+            "button.copyToClipboard": "Copier dans le presse-papiers",
+            "button.saveToFile": "Enregistrer dans un fichier",
+            "button.actions": "Actions",
+            "button.continue": "Continuer",
+            "button.iAgree": "J'accepte",
+            "language.title": "Langue de l'assistant d'installation",
+            "language.label": "Veuillez sélectionner la langue qui sera utilisée par l'assistant d'installation :",
+            "language.select": "Langue :",
+            "welcome.title": "Bienvenue dans l'assistant d'installation de {0}",
+            "welcome.message": "Cet assistant va vous guider dans l'installation de {0} sur votre ordinateur.\n\nIl est recommandé de fermer toutes les applications actives avant de continuer.",
+            "welcome.languageLabel": "Langue :",
+            "license.title": "Accord de licence",
+            "license.label": "Veuillez lire le contrat de licence suivant. Vous devez en accepter tous les termes avant de continuer l'installation.",
+            "license.accept": "Accepter",
+            "license.decline": "Refuser",
+            "ready.title": "Prêt à installer",
+            "ready.message": "L'assistant est maintenant prêt à installer {0} sur votre ordinateur.",
+            "ready.location": "Dossier de destination :",
+            "ready.continue": "Cliquez sur Installer pour continuer, ou sur Précédent pour revoir les paramètres.",
+            "installing.title": "Installation",
+            "installing.message": "Veuillez patienter pendant l'installation de {0} sur votre ordinateur.",
+            "installing.creatingDirs": "Création du dossier de destination...",
+            "installing.copyingFiles": "Installation des fichiers du programme...",
+            "installing.uninstaller": "Installation du désinstalleur...",
+            "installing.permissions": "Configuration du dossier de données...",
+            "installing.creatingShortcuts": "Création des raccourcis...",
+            "installing.creatingRegistry": "Création des entrées de registre...",
+            "installing.completing": "Finalisation de l'installation...",
+            "complete.title": "Installation terminée",
+            "complete.message": "L'installation de {0} sur votre ordinateur est terminée.",
+            "complete.launchHint": "L'application peut être lancée depuis le menu Démarrer.",
+            "uninstall.title": "Désinstallation",
+            "uninstall.confirm": "L'application {0} sera supprimée.\n\nVos données et paramètres seront conservés.\n\nVoulez-vous continuer ?",
+            "uninstall.complete": "Désinstallation terminée",
+            "uninstall.completeMessage": "L'application {0} a été supprimée.\n\nVos fichiers de données restent dans le dossier AppData.",
+            "uninstall.removing": "Suppression...",
+            "uninstall.removingRegistry": "Suppression des entrées de registre...",
+            "uninstall.removingShortcuts": "Suppression des raccourcis...",
+            "uninstall.removingFiles": "Suppression des fichiers du programme...",
+            "uninstall.cleanup": "Planification du nettoyage...",
+            "uninstall.removingFolder": "Suppression du dossier d'installation...",
+            "error.title": "Erreur",
+            "error.installFailed": "Échec de l'installation",
+            "error.uninstallFailed": "Échec de la désinstallation",
+            "error.closeAppFailed": "Impossible de fermer l'application : {0}\n\nVeuillez la fermer manuellement et réessayer.",
+            "upgrade.title": "Mise à niveau",
+            "reinstall.title": "Réinstallation",
+            "downgrade.title": "Rétrogradation",
+            "existing.detected": "{0} version {1} est actuellement installé.",
+            "upgrade.message": "Ce programme va mettre à niveau vers la version {0}.",
+            "reinstall.message": "Ce programme va réinstaller la version {0}.",
+            "downgrade.message": "Vous êtes sur le point de rétrograder vers la version {0}.",
+            "downgrade.warning": "Attention : La rétrogradation peut causer des problèmes de compatibilité avec les fichiers de données ou les paramètres existants.",
+            "downgrade.acknowledge": "Je comprends les risques et souhaite continuer la rétrogradation",
+            "confirm.continue": "Voulez-vous continuer ?",
+            "log.title": "Journal d'installation",
+            "log.saveTitle": "Enregistrer le journal"
+        },
+        "it": {
+            "_name": "Italiano",
+            "button.back": "Indietro",
+            "button.next": "Avanti",
+            "button.install": "Installa",
+            "button.ok": "OK",
+            "button.cancel": "Annulla",
+            "button.yes": "Sì",
+            "button.no": "No",
+            "button.finish": "Fine",
+            "button.close": "Chiudi",
+            "button.details": "Dettagli",
+            "button.copyToClipboard": "Copia negli appunti",
+            "button.saveToFile": "Salva su file",
+            "button.actions": "Azioni",
+            "button.continue": "Continua",
+            "button.iAgree": "Accetto",
+            "language.title": "Seleziona la lingua dell'installazione",
+            "language.label": "Seleziona la lingua da usare durante l'installazione:",
+            "language.select": "Lingua:",
+            "welcome.title": "Installazione di {0}",
+            "welcome.message": "{0} sarà installato sul computer.\n\nPrima di procedere chiudi tutte le applicazioni attive.",
+            "welcome.languageLabel": "Lingua:",
+            "license.title": "Contratto di licenza",
+            "license.label": "Leggi il seguente contratto di licenza. Per procedere con l'installazione è necessario accettare tutti i termini del contratto.",
+            "license.accept": "Accetto",
+            "license.decline": "Rifiuto",
+            "ready.title": "Pronto per l'installazione",
+            "ready.message": "L'installazione è pronta per installare {0} sul computer.",
+            "ready.location": "Cartella di destinazione:",
+            "ready.continue": "Seleziona Installa per continuare, o Indietro per rivedere le impostazioni.",
+            "installing.title": "Installazione",
+            "installing.message": "Attendi mentre {0} viene installato sul computer.",
+            "installing.creatingDirs": "Creazione cartella di destinazione...",
+            "installing.copyingFiles": "Installazione file del programma...",
+            "installing.uninstaller": "Installazione programma di disinstallazione...",
+            "installing.permissions": "Configurazione cartella dati...",
+            "installing.creatingShortcuts": "Creazione collegamenti...",
+            "installing.creatingRegistry": "Creazione voci di registro...",
+            "installing.completing": "Completamento installazione...",
+            "complete.title": "Installazione completata",
+            "complete.message": "L'installazione di {0} sul computer è stata completata.",
+            "complete.launchHint": "L'applicazione può essere avviata dal menu Start.",
+            "uninstall.title": "Disinstallazione",
+            "uninstall.confirm": "L'applicazione {0} verrà rimossa.\n\nI tuoi dati e impostazioni rimarranno intatti.\n\nVuoi continuare?",
+            "uninstall.complete": "Disinstallazione completata",
+            "uninstall.completeMessage": "L'applicazione {0} è stata rimossa.\n\nI tuoi file di dati rimangono nella cartella AppData.",
+            "uninstall.removing": "Rimozione...",
+            "uninstall.removingRegistry": "Rimozione voci di registro...",
+            "uninstall.removingShortcuts": "Rimozione collegamenti...",
+            "uninstall.removingFiles": "Rimozione file del programma...",
+            "uninstall.cleanup": "Pianificazione pulizia...",
+            "uninstall.removingFolder": "Rimozione cartella di installazione...",
+            "error.title": "Errore",
+            "error.installFailed": "Installazione non riuscita",
+            "error.uninstallFailed": "Disinstallazione non riuscita",
+            "error.closeAppFailed": "Impossibile chiudere l'applicazione: {0}\n\nChiuderla manualmente e riprovare.",
+            "upgrade.title": "Aggiornamento",
+            "reinstall.title": "Reinstallazione",
+            "downgrade.title": "Downgrade",
+            "existing.detected": "{0} versione {1} è attualmente installato.",
+            "upgrade.message": "Questo programma aggiornerà alla versione {0}.",
+            "reinstall.message": "Questo programma reinstallerà la versione {0}.",
+            "downgrade.message": "Stai per effettuare il downgrade alla versione {0}.",
+            "downgrade.warning": "Attenzione: Il downgrade può causare problemi di compatibilità con file di dati o impostazioni esistenti.",
+            "downgrade.acknowledge": "Comprendo i rischi e desidero procedere con il downgrade",
+            "confirm.continue": "Vuoi continuare?",
+            "log.title": "Registro di installazione",
+            "log.saveTitle": "Salva registro"
+        },
+        "ja": {
+            "_name": "日本語",
+            "button.back": "戻る",
+            "button.next": "次へ",
+            "button.install": "インストール",
+            "button.ok": "OK",
+            "button.cancel": "キャンセル",
+            "button.yes": "はい",
+            "button.no": "いいえ",
+            "button.finish": "完了",
+            "button.close": "閉じる",
+            "button.details": "詳細",
+            "button.copyToClipboard": "クリップボードにコピー",
+            "button.saveToFile": "ファイルに保存",
+            "button.actions": "操作",
+            "button.continue": "続行",
+            "button.iAgree": "同意する",
+            "language.title": "セットアップに使用する言語の選択",
+            "language.label": "インストール中に利用する言語を選んでください：",
+            "language.select": "言語：",
+            "welcome.title": "{0} セットアップウィザードの開始",
+            "welcome.message": "このプログラムはご使用のコンピューターへ {0} をインストールします。\n\n続行する前に他のアプリケーションをすべて終了してください。",
+            "welcome.languageLabel": "言語:",
+            "license.title": "使用許諾契約書の同意",
+            "license.label": "以下の使用許諾契約書をお読みください。インストールを続行するにはこの契約書に同意する必要があります。",
+            "license.accept": "同意",
+            "license.decline": "拒否",
+            "ready.title": "インストール準備完了",
+            "ready.message": "ご使用のコンピューターに {0} をインストールする準備ができました。",
+            "ready.location": "インストール先：",
+            "ready.continue": "インストールをクリックして続行するか、戻るをクリックして設定を確認してください。",
+            "installing.title": "インストール中",
+            "installing.message": "{0} をコンピューターにインストールしています。しばらくお待ちください。",
+            "installing.creatingDirs": "インストール先フォルダーを作成しています...",
+            "installing.copyingFiles": "プログラムファイルをインストールしています...",
+            "installing.uninstaller": "アンインストーラーをインストールしています...",
+            "installing.permissions": "データフォルダーを設定しています...",
+            "installing.creatingShortcuts": "ショートカットを作成しています...",
+            "installing.creatingRegistry": "レジストリエントリを作成しています...",
+            "installing.completing": "インストールを完了しています...",
+            "complete.title": "セットアップ完了",
+            "complete.message": "{0} のインストールが完了しました。",
+            "complete.launchHint": "アプリケーションはスタートメニューから起動できます。",
+            "uninstall.title": "アンインストール",
+            "uninstall.confirm": "{0} アプリケーションを削除します。\n\nデータと設定はそのまま残ります。\n\n続行しますか？",
+            "uninstall.complete": "アンインストール完了",
+            "uninstall.completeMessage": "{0} アプリケーションが削除されました。\n\nデータファイルは AppData フォルダーに残っています。",
+            "uninstall.removing": "削除中...",
+            "uninstall.removingRegistry": "レジストリエントリを削除しています...",
+            "uninstall.removingShortcuts": "ショートカットを削除しています...",
+            "uninstall.removingFiles": "プログラムファイルを削除しています...",
+            "uninstall.cleanup": "クリーンアップをスケジュールしています...",
+            "uninstall.removingFolder": "インストールフォルダーを削除しています...",
+            "error.title": "エラー",
+            "error.installFailed": "インストールに失敗しました",
+            "error.uninstallFailed": "アンインストールに失敗しました",
+            "error.closeAppFailed": "アプリケーションを閉じることができませんでした: {0}\n\n手動で閉じてから再試行してください。",
+            "upgrade.title": "アップグレードインストール",
+            "reinstall.title": "再インストール",
+            "downgrade.title": "ダウングレードインストール",
+            "existing.detected": "{0} バージョン {1} が現在インストールされています。",
+            "upgrade.message": "このインストーラーはバージョン {0} にアップグレードします。",
+            "reinstall.message": "このインストーラーはバージョン {0} を再インストールします。",
+            "downgrade.message": "バージョン {0} にダウングレードしようとしています。",
+            "downgrade.warning": "警告：ダウングレードすると、既存のデータファイルや設定との互換性の問題が発生する可能性があります。",
+            "downgrade.acknowledge": "リスクを理解した上でダウングレードを続行します",
+            "confirm.continue": "続行しますか？",
+            "log.title": "セットアップログ",
+            "log.saveTitle": "ログを保存"
+        },
+        "ko": {
+            "_name": "한국어",
+            "button.back": "뒤로",
+            "button.next": "다음",
+            "button.install": "설치",
+            "button.ok": "확인",
+            "button.cancel": "취소",
+            "button.yes": "예",
+            "button.no": "아니요",
+            "button.finish": "마침",
+            "button.close": "닫기",
+            "button.details": "세부 정보",
+            "button.copyToClipboard": "클립보드에 복사",
+            "button.saveToFile": "파일로 저장",
+            "button.actions": "작업",
+            "button.continue": "계속",
+            "button.iAgree": "동의함",
+            "language.title": "설치 언어 선택",
+            "language.label": "설치 중에 사용할 언어를 선택하세요:",
+            "language.select": "언어:",
+            "welcome.title": "{0} 설치 마법사에 오신 것을 환영합니다",
+            "welcome.message": "컴퓨터에 {0}이(가) 설치됩니다.\n\n계속하기 전에 다른 모든 응용 프로그램을 닫는 것이 좋습니다.",
+            "welcome.languageLabel": "언어:",
+            "license.title": "라이선스 계약",
+            "license.label": "다음 라이선스 계약을 읽어보세요. 설치를 계속하기 전에 이 계약 조건에 동의해야 합니다.",
+            "license.accept": "동의",
+            "license.decline": "거부",
+            "ready.title": "설치 준비 완료",
+            "ready.message": "컴퓨터에 {0}을(를) 설치할 준비가 되었습니다.",
+            "ready.location": "대상 위치:",
+            "ready.continue": "설치를 클릭하여 계속하거나 뒤로를 클릭하여 설정을 검토하세요.",
+            "installing.title": "설치 중",
+            "installing.message": "컴퓨터에 {0}을(를) 설치하는 동안 잠시 기다려 주세요.",
+            "installing.creatingDirs": "대상 디렉터리 생성 중...",
+            "installing.copyingFiles": "프로그램 파일 설치 중...",
+            "installing.uninstaller": "제거 프로그램 설치 중...",
+            "installing.permissions": "데이터 디렉터리 구성 중...",
+            "installing.creatingShortcuts": "바로 가기 만드는 중...",
+            "installing.creatingRegistry": "레지스트리 항목 만드는 중...",
+            "installing.completing": "설치 완료 중...",
+            "complete.title": "설치 완료",
+            "complete.message": "컴퓨터에 {0} 설치가 완료되었습니다.",
+            "complete.launchHint": "시작 메뉴에서 응용 프로그램을 시작할 수 있습니다.",
+            "uninstall.title": "제거",
+            "uninstall.confirm": "{0} 응용 프로그램이 제거됩니다.\n\n데이터와 설정은 그대로 유지됩니다.\n\n계속하시겠습니까?",
+            "uninstall.complete": "제거 완료",
+            "uninstall.completeMessage": "{0} 응용 프로그램이 제거되었습니다.\n\n데이터 파일은 AppData 폴더에 남아 있습니다.",
+            "uninstall.removing": "제거 중...",
+            "uninstall.removingRegistry": "레지스트리 항목 제거 중...",
+            "uninstall.removingShortcuts": "바로 가기 제거 중...",
+            "uninstall.removingFiles": "프로그램 파일 제거 중...",
+            "uninstall.cleanup": "정리 예약 중...",
+            "uninstall.removingFolder": "설치 폴더 제거 중...",
+            "error.title": "오류",
+            "error.installFailed": "설치 실패",
+            "error.uninstallFailed": "제거 실패",
+            "error.closeAppFailed": "응용 프로그램을 닫지 못했습니다: {0}\n\n수동으로 닫고 다시 시도하세요.",
+            "upgrade.title": "업그레이드 설치",
+            "reinstall.title": "재설치",
+            "downgrade.title": "다운그레이드 설치",
+            "existing.detected": "{0} 버전 {1}이(가) 현재 설치되어 있습니다.",
+            "upgrade.message": "이 설치 프로그램은 버전 {0}(으)로 업그레이드합니다.",
+            "reinstall.message": "이 설치 프로그램은 버전 {0}을(를) 재설치합니다.",
+            "downgrade.message": "버전 {0}(으)로 다운그레이드하려고 합니다.",
+            "downgrade.warning": "경고: 다운그레이드하면 기존 데이터 파일 또는 설정과의 호환성 문제가 발생할 수 있습니다.",
+            "downgrade.acknowledge": "위험을 이해하고 다운그레이드를 계속하겠습니다",
+            "confirm.continue": "계속하시겠습니까?",
+            "log.title": "설치 로그",
+            "log.saveTitle": "로그 저장"
+        },
+        "pt": {
+            "_name": "Português",
+            "button.back": "Anterior",
+            "button.next": "Seguinte",
+            "button.install": "Instalar",
+            "button.ok": "OK",
+            "button.cancel": "Cancelar",
+            "button.yes": "Sim",
+            "button.no": "Não",
+            "button.finish": "Concluir",
+            "button.close": "Fechar",
+            "button.details": "Detalhes",
+            "button.copyToClipboard": "Copiar para área de transferência",
+            "button.saveToFile": "Guardar em ficheiro",
+            "button.actions": "Ações",
+            "button.continue": "Continuar",
+            "button.iAgree": "Aceito",
+            "language.title": "Selecione o Idioma do Assistente de Instalação",
+            "language.label": "Selecione o idioma para usar durante a Instalação:",
+            "language.select": "Idioma:",
+            "welcome.title": "Bem-vindo ao Assistente de Instalação do {0}",
+            "welcome.message": "O Assistente de Instalação irá instalar o {0} no seu computador.\n\nÉ recomendado que feche todas as outras aplicações antes de continuar.",
+            "welcome.languageLabel": "Idioma:",
+            "license.title": "Contrato de licença",
+            "license.label": "Leia atentamente o seguinte contrato de licença. Deve aceitar os termos do contrato antes de continuar a instalação.",
+            "license.accept": "Aceitar",
+            "license.decline": "Recusar",
+            "ready.title": "Pronto para Instalar",
+            "ready.message": "O Assistente está pronto para instalar o {0} no seu computador.",
+            "ready.location": "Localização de destino:",
+            "ready.continue": "Clique em Instalar para continuar, ou em Anterior para rever as definições.",
+            "installing.title": "A instalar",
+            "installing.message": "Aguarde enquanto o {0} é instalado no seu computador.",
+            "installing.creatingDirs": "A criar pasta de destino...",
+            "installing.copyingFiles": "A instalar ficheiros do programa...",
+            "installing.uninstaller": "A instalar desinstalador...",
+            "installing.permissions": "A configurar pasta de dados...",
+            "installing.creatingShortcuts": "A criar atalhos...",
+            "installing.creatingRegistry": "A criar entradas de registo...",
+            "installing.completing": "A concluir instalação...",
+            "complete.title": "Instalação Concluída",
+            "complete.message": "A instalação do {0} no seu computador foi concluída.",
+            "complete.launchHint": "A aplicação pode ser iniciada a partir do menu Iniciar.",
+            "uninstall.title": "Desinstalar",
+            "uninstall.confirm": "A aplicação {0} será removida.\n\nOs seus dados e definições permanecerão intactos.\n\nDeseja continuar?",
+            "uninstall.complete": "Desinstalação Concluída",
+            "uninstall.completeMessage": "A aplicação {0} foi removida.\n\nOs seus ficheiros de dados permanecem na pasta AppData.",
+            "uninstall.removing": "A remover...",
+            "uninstall.removingRegistry": "A remover entradas de registo...",
+            "uninstall.removingShortcuts": "A remover atalhos...",
+            "uninstall.removingFiles": "A remover ficheiros do programa...",
+            "uninstall.cleanup": "A agendar limpeza...",
+            "uninstall.removingFolder": "A remover pasta de instalação...",
+            "error.title": "Erro",
+            "error.installFailed": "Falha na instalação",
+            "error.uninstallFailed": "Falha na desinstalação",
+            "error.closeAppFailed": "Falha ao fechar a aplicação: {0}\n\nFeche-a manualmente e tente novamente.",
+            "upgrade.title": "Atualização",
+            "reinstall.title": "Reinstalação",
+            "downgrade.title": "Regressão de versão",
+            "existing.detected": "{0} versão {1} está atualmente instalado.",
+            "upgrade.message": "Este instalador irá atualizar para a versão {0}.",
+            "reinstall.message": "Este instalador irá reinstalar a versão {0}.",
+            "downgrade.message": "Está prestes a regredir para a versão {0}.",
+            "downgrade.warning": "Aviso: A regressão pode causar problemas de compatibilidade com ficheiros de dados ou definições existentes.",
+            "downgrade.acknowledge": "Compreendo os riscos e pretendo prosseguir com a regressão",
+            "confirm.continue": "Deseja continuar?",
+            "log.title": "Registo de instalação",
+            "log.saveTitle": "Guardar registo"
+        },
+        "ru": {
+            "_name": "Русский",
+            "button.back": "Назад",
+            "button.next": "Далее",
+            "button.install": "Установить",
+            "button.ok": "OK",
+            "button.cancel": "Отмена",
+            "button.yes": "Да",
+            "button.no": "Нет",
+            "button.finish": "Завершить",
+            "button.close": "Закрыть",
+            "button.details": "Подробности",
+            "button.copyToClipboard": "Копировать в буфер обмена",
+            "button.saveToFile": "Сохранить в файл",
+            "button.actions": "Действия",
+            "button.continue": "Продолжить",
+            "button.iAgree": "Я согласен",
+            "language.title": "Выберите язык установки",
+            "language.label": "Выберите язык, который будет использован в процессе установки:",
+            "language.select": "Язык:",
+            "welcome.title": "Вас приветствует Мастер установки {0}",
+            "welcome.message": "Программа установит {0} на ваш компьютер.\n\nРекомендуется закрыть все прочие приложения перед тем, как продолжить.",
+            "welcome.languageLabel": "Язык:",
+            "license.title": "Лицензионное Соглашение",
+            "license.label": "Пожалуйста, прочтите следующее Лицензионное Соглашение. Вы должны принять условия этого соглашения перед тем, как продолжить.",
+            "license.accept": "Принять",
+            "license.decline": "Отклонить",
+            "ready.title": "Всё готово к установке",
+            "ready.message": "Программа установки готова начать установку {0} на ваш компьютер.",
+            "ready.location": "Папка установки:",
+            "ready.continue": "Нажмите «Установить», чтобы продолжить, или «Назад», чтобы просмотреть параметры.",
+            "installing.title": "Установка",
+            "installing.message": "Пожалуйста, подождите, пока {0} устанавливается на ваш компьютер.",
+            "installing.creatingDirs": "Создание папки назначения...",
+            "installing.copyingFiles": "Установка файлов программы...",
+            "installing.uninstaller": "Установка деинсталлятора...",
+            "installing.permissions": "Настройка папки данных...",
+            "installing.creatingShortcuts": "Создание ярлыков...",
+            "installing.creatingRegistry": "Создание записей реестра...",
+            "installing.completing": "Завершение установки...",
+            "complete.title": "Установка завершена",
+            "complete.message": "Установка {0} на ваш компьютер завершена.",
+            "complete.launchHint": "Приложение можно запустить из меню «Пуск».",
+            "uninstall.title": "Деинсталляция",
+            "uninstall.confirm": "Приложение {0} будет удалено.\n\nВаши данные и настройки останутся нетронутыми.\n\nВы хотите продолжить?",
+            "uninstall.complete": "Деинсталляция завершена",
+            "uninstall.completeMessage": "Приложение {0} было удалено.\n\nВаши файлы данных остаются в папке AppData.",
+            "uninstall.removing": "Удаление...",
+            "uninstall.removingRegistry": "Удаление записей реестра...",
+            "uninstall.removingShortcuts": "Удаление ярлыков...",
+            "uninstall.removingFiles": "Удаление файлов программы...",
+            "uninstall.cleanup": "Планирование очистки...",
+            "uninstall.removingFolder": "Удаление папки установки...",
+            "error.title": "Ошибка",
+            "error.installFailed": "Ошибка установки",
+            "error.uninstallFailed": "Ошибка деинсталляции",
+            "error.closeAppFailed": "Не удалось закрыть приложение: {0}\n\nЗакройте его вручную и повторите попытку.",
+            "upgrade.title": "Обновление",
+            "reinstall.title": "Переустановка",
+            "downgrade.title": "Понижение версии",
+            "existing.detected": "{0} версии {1} в настоящее время установлена.",
+            "upgrade.message": "Эта программа обновит до версии {0}.",
+            "reinstall.message": "Эта программа переустановит версию {0}.",
+            "downgrade.message": "Вы собираетесь понизить до версии {0}.",
+            "downgrade.warning": "Предупреждение: понижение версии может вызвать проблемы совместимости с существующими файлами данных или настройками.",
+            "downgrade.acknowledge": "Я понимаю риски и хочу продолжить понижение версии",
+            "confirm.continue": "Вы хотите продолжить?",
+            "log.title": "Журнал установки",
+            "log.saveTitle": "Сохранить журнал"
+        },
+        "th": {
+            "_name": "ไทย",
+            "button.back": "กลับ",
+            "button.next": "ถัดไป",
+            "button.install": "ติดตั้ง",
+            "button.ok": "ตกลง",
+            "button.cancel": "ยกเลิก",
+            "button.yes": "ใช่",
+            "button.no": "ไม่",
+            "button.finish": "เสร็จสิ้น",
+            "button.close": "ปิด",
+            "button.details": "รายละเอียด",
+            "button.copyToClipboard": "คัดลอกไปยังคลิปบอร์ด",
+            "button.saveToFile": "บันทึกเป็นไฟล์",
+            "button.actions": "การดำเนินการ",
+            "button.continue": "ดำเนินการต่อ",
+            "button.iAgree": "ฉันยอมรับ",
+            "language.title": "เลือกภาษาตัวติดตั้ง",
+            "language.label": "เลือกภาษาที่จะใช้ในระหว่างการติดตั้ง:",
+            "language.select": "ภาษา:",
+            "welcome.title": "ยินดีต้อนรับสู่ตัวติดตั้ง {0}",
+            "welcome.message": "กระบวนการนี้จะติดตั้ง {0} ลงบนคอมพิวเตอร์ของคุณ\n\nเราแนะนำให้คุณปิดโปรแกรมอื่นๆ ก่อนดำเนินการต่อ",
+            "welcome.languageLabel": "ภาษา:",
+            "license.title": "ข้อตกลงอนุญาต",
+            "license.label": "โปรดอ่านข้อตกลงอนุญาตต่อไปนี้ คุณต้องยอมรับเงื่อนไขของข้อตกลงนี้ก่อนดำเนินการติดตั้ง",
+            "license.accept": "ยอมรับ",
+            "license.decline": "ปฏิเสธ",
+            "ready.title": "พร้อมติดตั้ง",
+            "ready.message": "ตัวติดตั้งพร้อมที่จะติดตั้ง {0} บนคอมพิวเตอร์ของคุณแล้ว",
+            "ready.location": "ตำแหน่งปลายทาง:",
+            "ready.continue": "คลิกติดตั้งเพื่อดำเนินการต่อ หรือคลิกกลับเพื่อตรวจสอบการตั้งค่า",
+            "installing.title": "กำลังติดตั้ง",
+            "installing.message": "โปรดรอขณะที่กำลังติดตั้ง {0} บนคอมพิวเตอร์ของคุณ",
+            "installing.creatingDirs": "กำลังสร้างโฟลเดอร์ปลายทาง...",
+            "installing.copyingFiles": "กำลังติดตั้งไฟล์โปรแกรม...",
+            "installing.uninstaller": "กำลังติดตั้งตัวถอนการติดตั้ง...",
+            "installing.permissions": "กำลังกำหนดค่าโฟลเดอร์ข้อมูล...",
+            "installing.creatingShortcuts": "กำลังสร้างทางลัด...",
+            "installing.creatingRegistry": "กำลังสร้างรายการรีจิสทรี...",
+            "installing.completing": "กำลังดำเนินการติดตั้งให้เสร็จสิ้น...",
+            "complete.title": "การติดตั้งเสร็จสมบูรณ์",
+            "complete.message": "การติดตั้ง {0} บนคอมพิวเตอร์ของคุณเสร็จสิ้นแล้ว",
+            "complete.launchHint": "สามารถเปิดแอปพลิเคชันจากเมนูเริ่มต้น",
+            "uninstall.title": "ถอนการติดตั้ง",
+            "uninstall.confirm": "แอปพลิเคชัน {0} จะถูกลบออก\n\nข้อมูลและการตั้งค่าของคุณจะยังคงอยู่\n\nคุณต้องการดำเนินการต่อหรือไม่?",
+            "uninstall.complete": "การถอนการติดตั้งเสร็จสมบูรณ์",
+            "uninstall.completeMessage": "แอปพลิเคชัน {0} ถูกลบออกแล้ว\n\nไฟล์ข้อมูลของคุณยังคงอยู่ในโฟลเดอร์ AppData",
+            "uninstall.removing": "กำลังลบ...",
+            "uninstall.removingRegistry": "กำลังลบรายการรีจิสทรี...",
+            "uninstall.removingShortcuts": "กำลังลบทางลัด...",
+            "uninstall.removingFiles": "กำลังลบไฟล์โปรแกรม...",
+            "uninstall.cleanup": "กำลังกำหนดการทำความสะอาด...",
+            "uninstall.removingFolder": "กำลังลบโฟลเดอร์การติดตั้ง...",
+            "error.title": "ข้อผิดพลาด",
+            "error.installFailed": "การติดตั้งล้มเหลว",
+            "error.uninstallFailed": "การถอนการติดตั้งล้มเหลว",
+            "error.closeAppFailed": "ไม่สามารถปิดแอปพลิเคชัน: {0}\n\nกรุณาปิดด้วยตนเองแล้วลองอีกครั้ง",
+            "upgrade.title": "การอัปเกรด",
+            "reinstall.title": "ติดตั้งใหม่",
+            "downgrade.title": "การดาวน์เกรด",
+            "existing.detected": "{0} เวอร์ชัน {1} ติดตั้งอยู่ในขณะนี้",
+            "upgrade.message": "ตัวติดตั้งนี้จะอัปเกรดเป็นเวอร์ชัน {0}",
+            "reinstall.message": "ตัวติดตั้งนี้จะติดตั้งเวอร์ชัน {0} ใหม่",
+            "downgrade.message": "คุณกำลังจะดาวน์เกรดเป็นเวอร์ชัน {0}",
+            "downgrade.warning": "คำเตือน: การดาวน์เกรดอาจทำให้เกิดปัญหาความเข้ากันได้กับไฟล์ข้อมูลหรือการตั้งค่าที่มีอยู่",
+            "downgrade.acknowledge": "ฉันเข้าใจความเสี่ยงและต้องการดำเนินการดาวน์เกรดต่อ",
+            "confirm.continue": "คุณต้องการดำเนินการต่อหรือไม่?",
+            "log.title": "บันทึกการติดตั้ง",
+            "log.saveTitle": "บันทึกบันทึกการติดตั้ง"
+        },
+        "zh-Hans": {
+            "_name": "简体中文",
+            "button.back": "上一步",
+            "button.next": "下一步",
+            "button.install": "安装",
+            "button.ok": "确定",
+            "button.cancel": "取消",
+            "button.yes": "是",
+            "button.no": "否",
+            "button.finish": "完成",
+            "button.close": "关闭",
+            "button.details": "详细信息",
+            "button.copyToClipboard": "复制到剪贴板",
+            "button.saveToFile": "保存到文件",
+            "button.actions": "操作",
+            "button.continue": "继续",
+            "button.iAgree": "我同意",
+            "language.title": "选择安装语言",
+            "language.label": "选择在安装过程中使用的语言：",
+            "language.select": "语言：",
+            "welcome.title": "欢迎使用 {0} 安装向导",
+            "welcome.message": "此程序将在您的计算机上安装 {0}。\n\n建议您在继续之前关闭所有其他应用程序。",
+            "welcome.languageLabel": "语言:",
+            "license.title": "许可协议",
+            "license.label": "请阅读以下许可协议。您必须接受此协议的条款才能继续安装。",
+            "license.accept": "接受",
+            "license.decline": "拒绝",
+            "ready.title": "准备安装",
+            "ready.message": "安装程序已准备好在您的计算机上安装 {0}。",
+            "ready.location": "目标位置：",
+            "ready.continue": "点击「安装」继续，或点击「上一步」检查设置。",
+            "installing.title": "正在安装",
+            "installing.message": "正在安装 {0}，请稍候。",
+            "installing.creatingDirs": "正在创建目标目录...",
+            "installing.copyingFiles": "正在安装程序文件...",
+            "installing.uninstaller": "正在安装卸载程序...",
+            "installing.permissions": "正在配置数据目录...",
+            "installing.creatingShortcuts": "正在创建快捷方式...",
+            "installing.creatingRegistry": "正在创建注册表项...",
+            "installing.completing": "正在完成安装...",
+            "complete.title": "安装完成",
+            "complete.message": "{0} 已成功安装到您的计算机。",
+            "complete.launchHint": "可以从开始菜单启动应用程序。",
+            "uninstall.title": "卸载",
+            "uninstall.confirm": "将卸载 {0} 应用程序。\n\n您的数据和设置将保持完整。\n\n是否要继续？",
+            "uninstall.complete": "卸载完成",
+            "uninstall.completeMessage": "{0} 应用程序已卸载。\n\n您的数据文件保留在 AppData 文件夹中。",
+            "uninstall.removing": "正在删除...",
+            "uninstall.removingRegistry": "正在删除注册表项...",
+            "uninstall.removingShortcuts": "正在删除快捷方式...",
+            "uninstall.removingFiles": "正在删除程序文件...",
+            "uninstall.cleanup": "正在安排清理...",
+            "uninstall.removingFolder": "正在删除安装文件夹...",
+            "error.title": "错误",
+            "error.installFailed": "安装失败",
+            "error.uninstallFailed": "卸载失败",
+            "error.closeAppFailed": "无法关闭应用程序：{0}\n\n请手动关闭后重试。",
+            "upgrade.title": "升级安装",
+            "reinstall.title": "重新安装",
+            "downgrade.title": "降级安装",
+            "existing.detected": "当前已安装 {0} 版本 {1}。",
+            "upgrade.message": "此安装程序将升级到版本 {0}。",
+            "reinstall.message": "此安装程序将重新安装版本 {0}。",
+            "downgrade.message": "您即将降级到版本 {0}。",
+            "downgrade.warning": "警告：降级可能会导致与现有数据文件或设置的兼容性问题。",
+            "downgrade.acknowledge": "我了解风险并希望继续降级",
+            "confirm.continue": "是否要继续？",
+            "log.title": "安装日志",
+            "log.saveTitle": "保存日志"
+        },
+        "zh-Hant": {
+            "_name": "繁體中文",
+            "button.back": "上一步",
+            "button.next": "下一步",
+            "button.install": "安裝",
+            "button.ok": "確定",
+            "button.cancel": "取消",
+            "button.yes": "是",
+            "button.no": "否",
+            "button.finish": "完成",
+            "button.close": "關閉",
+            "button.details": "詳細資訊",
+            "button.copyToClipboard": "複製到剪貼簿",
+            "button.saveToFile": "儲存到檔案",
+            "button.actions": "操作",
+            "button.continue": "繼續",
+            "button.iAgree": "我同意",
+            "language.title": "選擇安裝語言",
+            "language.label": "選擇在安裝過程中使用的語言：",
+            "language.select": "語言：",
+            "welcome.title": "歡迎使用 {0} 安裝程式",
+            "welcome.message": "這個安裝程式將會安裝 {0} 到您的電腦。\n\n我們強烈建議您在安裝過程中關閉其它的應用程式。",
+            "welcome.languageLabel": "語言:",
+            "license.title": "授權合約",
+            "license.label": "請閱讀以下授權合約，您必須接受合約的各項條款才能繼續安裝。",
+            "license.accept": "接受",
+            "license.decline": "拒絕",
+            "ready.title": "準備安裝",
+            "ready.message": "安裝程式已準備好在您的電腦上安裝 {0}。",
+            "ready.location": "目的資料夾：",
+            "ready.continue": "按「安裝」繼續，或按「上一步」檢視設定。",
+            "installing.title": "正在安裝",
+            "installing.message": "正在安裝 {0}，請稍候。",
+            "installing.creatingDirs": "正在建立目的資料夾...",
+            "installing.copyingFiles": "正在安裝程式檔案...",
+            "installing.uninstaller": "正在安裝解除安裝程式...",
+            "installing.permissions": "正在設定資料目錄...",
+            "installing.creatingShortcuts": "正在建立捷徑...",
+            "installing.creatingRegistry": "正在建立登錄項目...",
+            "installing.completing": "正在完成安裝...",
+            "complete.title": "安裝完成",
+            "complete.message": "{0} 已成功安裝到您的電腦。",
+            "complete.launchHint": "可從「開始」功能表啟動應用程式。",
+            "uninstall.title": "解除安裝",
+            "uninstall.confirm": "將解除安裝 {0} 應用程式。\n\n您的資料和設定將保持完整。\n\n是否要繼續？",
+            "uninstall.complete": "解除安裝完成",
+            "uninstall.completeMessage": "{0} 應用程式已解除安裝。\n\n您的資料檔案保留在 AppData 資料夾中。",
+            "uninstall.removing": "正在移除...",
+            "uninstall.removingRegistry": "正在移除登錄項目...",
+            "uninstall.removingShortcuts": "正在移除捷徑...",
+            "uninstall.removingFiles": "正在移除程式檔案...",
+            "uninstall.cleanup": "正在排程清理...",
+            "uninstall.removingFolder": "正在移除安裝資料夾...",
+            "error.title": "錯誤",
+            "error.installFailed": "安裝失敗",
+            "error.uninstallFailed": "解除安裝失敗",
+            "error.closeAppFailed": "無法關閉應用程式：{0}\n\n請手動關閉後再試一次。",
+            "upgrade.title": "升級安裝",
+            "reinstall.title": "重新安裝",
+            "downgrade.title": "降級安裝",
+            "existing.detected": "目前已安裝 {0} 版本 {1}。",
+            "upgrade.message": "此安裝程式將升級到版本 {0}。",
+            "reinstall.message": "此安裝程式將重新安裝版本 {0}。",
+            "downgrade.message": "您即將降級到版本 {0}。",
+            "downgrade.warning": "警告：降級可能會導致與現有資料檔案或設定的相容性問題。",
+            "downgrade.acknowledge": "我了解風險並希望繼續降級",
+            "confirm.continue": "是否要繼續？",
+            "log.title": "安裝記錄",
+            "log.saveTitle": "儲存記錄"
+        }
+    };
+
+    // Merged translations (library + app)
+    const translations = {};
+
+    // Current language
+    let currentLang = 'en';
+
+    // Initialize translations by merging library and app translations
+    function initTranslations() {
+        // Start with library translations
+        for (const lang in libraryTranslations) {
+            translations[lang] = { ...libraryTranslations[lang] };
+        }
+        // Merge app translations (if provided by backend)
+        if (typeof appTranslations !== 'undefined' && appTranslations) {
+            for (const lang in appTranslations) {
+                if (translations[lang]) {
+                    translations[lang] = { ...translations[lang], ...appTranslations[lang] };
+                } else {
+                    translations[lang] = { ...appTranslations[lang] };
+                }
+            }
+        }
+    }
+
+    // Translate a single text string
+    function translate(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+
+        if (!text.startsWith(TRANSLATION_PREFIX)) {
+            return text; // Literal text - return as-is
+        }
+
+        // Strip prefix and parse key + optional args
+        const content = text.slice(1); // Remove \x01
+        let key, args = [];
+
+        const sepIndex = content.indexOf(ARG_SEPARATOR);
+        if (sepIndex >= 0) {
+            key = content.slice(0, sepIndex);
+            try {
+                args = JSON.parse(content.slice(sepIndex + 1));
+                // Recursively translate any args that are themselves translation keys
+                args = args.map(function(arg) {
+                    if (typeof arg === 'string' && arg.startsWith(TRANSLATION_PREFIX)) {
+                        return translate(arg);
+                    }
+                    return arg;
+                });
+            } catch (e) {
+                // Ignore parse errors
+            }
+        } else {
+            key = content;
+        }
+
+        // Get template string with fallback chain: current lang → English → raw key
+        let template = translations[currentLang]?.[key]
+                    || translations['en']?.[key]
+                    || key;
+
+        // Substitute placeholders: {0}, {1}, etc.
+        return template.replace(/\{(\d+)\}/g, function(match, index) {
+            const idx = parseInt(index, 10);
+            return (args[idx] !== undefined) ? args[idx] : match;
+        });
+    }
+
+    // Parse a translation string into key and args
+    function parseTranslationString(text) {
+        if (!text || !text.startsWith(TRANSLATION_PREFIX)) {
+            return null;
+        }
+        const content = text.slice(1);
+        const sepIndex = content.indexOf(ARG_SEPARATOR);
+        if (sepIndex >= 0) {
+            return {
+                key: content.slice(0, sepIndex),
+                args: content.slice(sepIndex + 1)
+            };
+        }
+        return { key: content, args: null };
+    }
+
+    // Translate using parsed key/args object
+    function translateParsed(parsed) {
+        if (!parsed) return '';
+
+        let args = [];
+        if (parsed.args) {
+            try {
+                args = JSON.parse(parsed.args);
+                // Recursively translate any args that are themselves translation keys
+                args = args.map(function(arg) {
+                    if (typeof arg === 'string' && arg.startsWith(TRANSLATION_PREFIX)) {
+                        return translate(arg);
+                    }
+                    return arg;
+                });
+            } catch (e) { /* ignore */ }
+        }
+
+        let template = translations[currentLang]?.[parsed.key]
+                    || translations['en']?.[parsed.key]
+                    || parsed.key;
+
+        return template.replace(/\{(\d+)\}/g, function(match, index) {
+            const idx = parseInt(index, 10);
+            return (args[idx] !== undefined) ? args[idx] : match;
+        });
+    }
+
+    // Translate all text nodes and attributes in the page
+    function translatePage() {
+        // Walk DOM and translate text nodes containing prefix
+        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+            const node = walker.currentNode;
+            if (node.textContent && node.textContent.includes(TRANSLATION_PREFIX)) {
+                // Parse and store as JSON for reliable round-trip through HTML attributes
+                const parsed = parseTranslationString(node.textContent);
+                if (parsed) {
+                    const parent = node.parentElement;
+                    if (parent && !parent.hasAttribute('data-i18n')) {
+                        parent.setAttribute('data-i18n', JSON.stringify(parsed));
+                    }
+                    node.textContent = translateParsed(parsed);
+                }
+            }
+        }
+
+        // Translate placeholder and title attributes
+        document.querySelectorAll('[placeholder], [title]').forEach(function(el) {
+            if (el.placeholder && el.placeholder.startsWith(TRANSLATION_PREFIX)) {
+                const parsed = parseTranslationString(el.placeholder);
+                if (parsed) {
+                    el.setAttribute('data-i18n-placeholder', JSON.stringify(parsed));
+                    el.placeholder = translateParsed(parsed);
+                }
+            }
+            if (el.title && el.title.startsWith(TRANSLATION_PREFIX)) {
+                const parsed = parseTranslationString(el.title);
+                if (parsed) {
+                    el.setAttribute('data-i18n-title', JSON.stringify(parsed));
+                    el.title = translateParsed(parsed);
+                }
+            }
+        });
+    }
+
+    // Re-translate page using stored keys (for language change)
+    function retranslatePage() {
+        // Re-translate elements with stored keys
+        document.querySelectorAll('[data-i18n]').forEach(function(el) {
+            try {
+                const parsed = JSON.parse(el.getAttribute('data-i18n'));
+                el.textContent = translateParsed(parsed);
+            } catch (e) { /* ignore malformed */ }
+        });
+
+        // Re-translate attributes
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+            try {
+                const parsed = JSON.parse(el.getAttribute('data-i18n-placeholder'));
+                el.placeholder = translateParsed(parsed);
+            } catch (e) { /* ignore */ }
+        });
+        document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+            try {
+                const parsed = JSON.parse(el.getAttribute('data-i18n-title'));
+                el.title = translateParsed(parsed);
+            } catch (e) { /* ignore */ }
+        });
+    }
+
+    // Set current language
+    function setLanguage(lang) {
+        if (translations[lang]) {
+            currentLang = lang;
+        }
+    }
+
+    // Get current language
+    function getLanguage() {
+        return currentLang;
+    }
+
+    // Get language name for display
+    function getLanguageName(lang) {
+        return translations[lang]?.['_name'] || lang;
+    }
+
+    // Get available languages
+    function getAvailableLanguages() {
+        return Object.keys(translations).map(function(lang) {
+            return {
+                code: lang,
+                name: translations[lang]?.['_name'] || lang
+            };
+        });
+    }
+
+    // Expose functions globally
+    window.i18n = {
+        init: initTranslations,
+        translate: translate,
+        translatePage: translatePage,
+        retranslatePage: retranslatePage,
+        setLanguage: setLanguage,
+        getLanguage: getLanguage,
+        getLanguageName: getLanguageName,
+        getAvailableLanguages: getAvailableLanguages,
+        TRANSLATION_PREFIX: TRANSLATION_PREFIX,
+        ARG_SEPARATOR: ARG_SEPARATOR
+    };
+
+    // Note: initTranslations() is called from runtime.js after appTranslations is defined
+})();

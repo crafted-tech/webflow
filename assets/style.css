@@ -302,7 +302,7 @@ body.using-keyboard .btn:focus {
     white-space: nowrap;
 }
 
-.form-group-inline .form-select {
+.form-group-inline .select-wrapper {
     width: auto;
 }
 
@@ -342,19 +342,27 @@ body.using-keyboard .btn:focus {
     resize: vertical;
 }
 
-.form-select {
+/* Select dropdown with chevron icon */
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.select-wrapper select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M3 4.5L6 7.5L9 4.5'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
     padding-right: 2rem;
     cursor: pointer;
 }
 
-/* Selects always show focus (users need to know which control is active) */
-.form-select:focus {
-    border-color: hsl(var(--ring));
-    box-shadow: inset 0 0 0 1px hsl(var(--ring));
+.select-chevron {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: hsl(var(--muted-foreground));
 }
 
 /* Modern accent-color for form controls (checkboxes, radios, range, progress) */
@@ -790,4 +798,124 @@ body.using-keyboard .menu-item:focus {
 
 ::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Welcome page */
+.welcome-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.welcome-logo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-logo svg {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+}
+
+.welcome-logo img {
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+.welcome-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0;
+}
+
+.welcome-message {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    line-height: 1.6;
+    max-width: 400px;
+    margin: 0;
+}
+
+.welcome-language {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.welcome-language .form-label {
+    margin-bottom: 0;
+}
+
+.welcome-language .select-wrapper {
+    min-width: 150px;
+}
+
+.welcome-language .select-wrapper select {
+    width: 100%;
+}
+
+/* License view */
+.license-label {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 0.75rem;
+}
+
+.license-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 250px;
+}
+
+/* Confirmation warning */
+.confirm-warning {
+    background-color: hsl(38 92% 50% / 0.15);
+    border: 1px solid hsl(38 92% 50% / 0.4);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    margin: 0.75rem 0;
+    font-size: 0.875rem;
+    color: hsl(38 92% 35%);
+}
+
+[data-theme="dark"] .confirm-warning {
+    background-color: hsl(38 92% 50% / 0.1);
+    border-color: hsl(38 92% 50% / 0.3);
+    color: hsl(38 92% 60%);
+}
+
+/* Summary list (key-value pairs) */
+.summary-list {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0;
+}
+
+.summary-list dt {
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+}
+
+.summary-list dd {
+    margin: 0;
+    color: hsl(var(--foreground));
 }

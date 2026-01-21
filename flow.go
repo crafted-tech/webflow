@@ -289,10 +289,11 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 	return page
 }
 
-// ShowMessage displays a simple message with configurable buttons.
-// Use WithButtonBar option to set navigation buttons.
+// ShowMessage displays a simple message or structured content with configurable buttons.
+// The content parameter can be a string (for simple text) or other content types like
+// SummaryConfig (for key-value summaries). Use WithButtonBar option to set navigation buttons.
 // Default is SimpleOK() if no ButtonBar is provided.
-func (f *Flow) ShowMessage(title, message string, opts ...PageOption) (Response, ButtonResult) {
+func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) (Response, ButtonResult) {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -307,7 +308,7 @@ func (f *Flow) ShowMessage(title, message string, opts ...PageOption) (Response,
 		opts = append(opts, WithButtonBar(SimpleOK()))
 	}
 
-	page := applyPageConfig(title, message, opts)
+	page := applyPageConfig(title, content, opts)
 	resp := f.ShowPage(page)
 	return resp, resp.ToButtonResult()
 }
@@ -426,6 +427,160 @@ func (f *Flow) ShowConfirm(title, message string) bool {
 // ShowError displays an error message with an OK button and error icon.
 func (f *Flow) ShowError(title, message string) {
 	f.ShowMessage(title, message, WithIcon("error"), WithButtonBar(SimpleOK()))
+}
+
+// ShowErrorDetails displays an error message with OK and optional Details buttons.
+// If detailsContent is provided, a Details button is shown that opens a log viewer
+// with Copy and optional Save functionality.
+func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy func(), onSave ...func()) {
+	if detailsContent == "" {
+		// No details - just show simple error
+		f.ShowError(title, message)
+		return
+	}
+
+	// Create button bar with Details button
+	detailsBtn := NewButton(T("button.details"), "details")
+	buttonBar := ButtonBar{
+		Left:  detailsBtn,
+		Close: NewButton(T("button.ok"), ButtonClose).WithPrimary(),
+	}
+
+	page := Page{
+		Title:     title,
+		Content:   message,
+		Icon:      "error",
+		ButtonBar: buttonBar,
+	}
+
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.wv.LoadHTML(html)
+	f.wv.Show()
+
+	// Event loop
+	for {
+		f.mu.Lock()
+		f.quitOnMsg = true
+		f.mu.Unlock()
+
+		f.wv.Run()
+
+		f.mu.Lock()
+		f.quitOnMsg = false
+		f.mu.Unlock()
+
+		select {
+		case msg := <-f.responseCh:
+			if msg.Button == "details" {
+				// Show details in review dialog with Copy and optional Save
+				if len(onSave) > 0 && onSave[0] != nil {
+					f.ShowReviewWithSave(T("log.title"), detailsContent, onCopy, onSave[0])
+				} else {
+					f.ShowReview(T("log.title"), detailsContent, onCopy)
+				}
+				// Re-render and continue showing error
+				f.wv.LoadHTML(html)
+				continue
+			}
+			return // OK/Close clicked
+		default:
+			return
+		}
+	}
+}
+
+// ShowWelcome displays a welcome page with optional logo and language selector.
+// Returns the ButtonResult (typically Next or Close).
+func (f *Flow) ShowWelcome(cfg WelcomeConfig, opts ...PageOption) ButtonResult {
+	// Apply default ButtonBar if none provided
+	hasButtonBar := false
+	for _, opt := range opts {
+		pcfg := PageConfig{}
+		opt(&pcfg)
+		if pcfg.ButtonBar != nil {
+			hasButtonBar = true
+			break
+		}
+	}
+	if !hasButtonBar {
+		opts = append(opts, WithButtonBar(WizardFirst()))
+	}
+
+	page := applyPageConfig("", cfg, opts)
+	resp := f.ShowPage(page)
+	return resp.ToButtonResult()
+}
+
+// ShowLicense displays a license agreement page.
+// Returns true if the user accepted (I Agree), false if declined or closed.
+func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) bool {
+	// Apply default ButtonBar if none provided
+	hasButtonBar := false
+	for _, opt := range opts {
+		pcfg := PageConfig{}
+		opt(&pcfg)
+		if pcfg.ButtonBar != nil {
+			hasButtonBar = true
+			break
+		}
+	}
+	if !hasButtonBar {
+		opts = append(opts, WithButtonBar(WizardLicense()))
+	}
+
+	// Apply bordered content style for license text
+	opts = append(opts, WithBorderedContent())
+
+	page := applyPageConfig(cfg.Title, cfg, opts)
+	resp := f.ShowPage(page)
+	return resp.ToButtonResult() == ButtonResultNext
+}
+
+// ShowConfirmWithCheckbox displays a confirmation dialog with a required checkbox.
+// The Next/Install button is disabled until the checkbox is checked.
+// Returns true if the user confirmed (clicked Next with checkbox checked), false otherwise.
+func (f *Flow) ShowConfirmWithCheckbox(cfg ConfirmCheckboxConfig, opts ...PageOption) bool {
+	// Apply default ButtonBar if none provided
+	hasButtonBar := false
+	for _, opt := range opts {
+		pcfg := PageConfig{}
+		opt(&pcfg)
+		if pcfg.ButtonBar != nil {
+			hasButtonBar = true
+			break
+		}
+	}
+	if !hasButtonBar {
+		// Default to Install button bar with disabled Next
+		bb := WizardInstall()
+		bb.Next = bb.Next.Disabled() // Start disabled
+		opts = append(opts, WithButtonBar(bb))
+	}
+
+	page := applyPageConfig(cfg.Title, cfg, opts)
+	resp := f.ShowPage(page)
+
+	// Check if checkbox was checked and Next was clicked
+	if resp.ToButtonResult() == ButtonResultNext {
+		if checked, ok := resp.Data["_confirm_checkbox"].(bool); ok && checked {
+			return true
+		}
+	}
+	return false
+}
+
+// ShowFileSavePicker shows a native file save dialog and returns the selected path.
+// Returns the path and true if a file was selected, empty string and false if cancelled.
+func (f *Flow) ShowFileSavePicker(title, defaultName string, filters ...FileFilter) (string, bool) {
+	// Convert FileFilter to types.FileFilter
+	typeFilters := make([]types.FileFilter, len(filters))
+	for i, filter := range filters {
+		typeFilters[i] = types.FileFilter{
+			Name:     filter.Name,
+			Patterns: filter.Patterns,
+		}
+	}
+	return saveFile(f.wv, title, defaultName, typeFilters...)
 }
 
 // ShowTextInput displays a single text input dialog.

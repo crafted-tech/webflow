@@ -106,73 +106,82 @@ const (
 
 // WizardFirst returns a ButtonBar for the first wizard page: [Next >] [Close].
 // No back button since going back is not possible.
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardFirst() ButtonBar {
 	return ButtonBar{
-		Next:  NewButton("Next", ButtonNext).WithPrimary(),
-		Close: NewButton("Close", ButtonClose),
+		Next:  NewButton(T("button.next"), ButtonNext).WithPrimary(),
+		Close: NewButton(T("button.close"), ButtonClose),
 	}
 }
 
 // WizardMiddle returns a ButtonBar for middle wizard pages: [Back] [Next >] [Close].
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardMiddle() ButtonBar {
 	return ButtonBar{
-		Back:  NewButton("Back", ButtonBack),
-		Next:  NewButton("Next", ButtonNext).WithPrimary(),
-		Close: NewButton("Close", ButtonClose),
+		Back:  NewButton(T("button.back"), ButtonBack),
+		Next:  NewButton(T("button.next"), ButtonNext).WithPrimary(),
+		Close: NewButton(T("button.close"), ButtonClose),
 	}
 }
 
 // WizardInstall returns a ButtonBar for install confirmation: [Back] [Install] [Close].
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardInstall() ButtonBar {
 	return ButtonBar{
-		Back:  NewButton("Back", ButtonBack),
-		Next:  NewButton("Install", ButtonNext).WithPrimary(),
-		Close: NewButton("Close", ButtonClose),
+		Back:  NewButton(T("button.back"), ButtonBack),
+		Next:  NewButton(T("button.install"), ButtonNext).WithPrimary(),
+		Close: NewButton(T("button.close"), ButtonClose),
 	}
 }
 
 // WizardFinish returns a ButtonBar for completion: [Finish].
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardFinish() ButtonBar {
 	return ButtonBar{
-		Next: NewButton("Finish", ButtonClose).WithPrimary(),
+		Next: NewButton(T("button.finish"), ButtonClose).WithPrimary(),
 	}
 }
 
 // WizardLicense returns a ButtonBar for license agreement: [Back] [I Agree] [Close].
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardLicense() ButtonBar {
 	return ButtonBar{
-		Back:  NewButton("Back", ButtonBack),
-		Next:  NewButton("I Agree", ButtonNext).WithPrimary(),
-		Close: NewButton("Close", ButtonClose),
+		Back:  NewButton(T("button.back"), ButtonBack),
+		Next:  NewButton(T("button.iAgree"), ButtonNext).WithPrimary(),
+		Close: NewButton(T("button.close"), ButtonClose),
 	}
 }
 
 // WizardProgress returns a ButtonBar for progress pages: [Cancel].
+// Button labels are translation keys - they will be translated by the frontend.
 func WizardProgress() ButtonBar {
 	return ButtonBar{
-		Close: NewButton("Cancel", ButtonCancel),
+		Close: NewButton(T("button.cancel"), ButtonCancel),
 	}
 }
 
 // SimpleOK returns a ButtonBar with just [OK].
+// Button labels are translation keys - they will be translated by the frontend.
 func SimpleOK() ButtonBar {
 	return ButtonBar{
-		Next: NewButton("OK", ButtonNext).WithPrimary(),
+		Next: NewButton(T("button.ok"), ButtonNext).WithPrimary(),
 	}
 }
 
 // SimpleClose returns a ButtonBar with just [Close].
+// Button labels are translation keys - they will be translated by the frontend.
 func SimpleClose() ButtonBar {
 	return ButtonBar{
-		Close: NewButton("Close", ButtonClose).WithPrimary(),
+		Close: NewButton(T("button.close"), ButtonClose).WithPrimary(),
 	}
 }
 
 // ConfirmYesNo returns a ButtonBar for confirmation: [No] [Yes].
+// Button labels are translation keys - they will be translated by the frontend.
 func ConfirmYesNo() ButtonBar {
 	return ButtonBar{
-		Back: NewButton("No", ButtonBack),
-		Next: NewButton("Yes", ButtonNext).WithPrimary(),
+		Back: NewButton(T("button.no"), ButtonBack),
+		Next: NewButton(T("button.yes"), ButtonNext).WithPrimary(),
 	}
 }
 
@@ -382,6 +391,50 @@ type ReviewConfig struct {
 	OnCopy   func() // Callback when Copy is clicked
 	OnSave   func() // Callback when Save is clicked
 	Subtitle string // Optional subtitle (e.g., file path)
+}
+
+// WelcomeConfig configures a welcome page with optional logo and language selector.
+type WelcomeConfig struct {
+	Logo             []byte // Optional SVG/PNG logo data
+	LogoHeight       int    // Logo height in pixels (0 for default: 64)
+	Title            string // Main title
+	Message          string // Welcome message
+	LanguageSelector bool   // Show language selector
+}
+
+// LicenseConfig configures a license agreement page.
+type LicenseConfig struct {
+	Title   string // Page title (e.g., "License Agreement")
+	Label   string // Instruction text above the license
+	Content string // License text content
+}
+
+// ConfirmCheckboxConfig configures a confirmation dialog with a required checkbox.
+type ConfirmCheckboxConfig struct {
+	Title          string // Dialog title
+	Message        string // Main message text
+	CheckboxLabel  string // Label for the required checkbox
+	WarningMessage string // Optional warning message (shown in yellow/orange)
+}
+
+// SummaryItem represents a single key-value pair in a summary display.
+// Used for "Ready to Install" pages where labels need translation but values are literal.
+type SummaryItem struct {
+	Label string // Label text (use T() for translation keys)
+	Value string // Literal value (rendered as-is)
+}
+
+// SummaryConfig configures a summary/review display with labeled key-value pairs.
+// The frontend translates labels (if they have translation prefix) while values
+// are rendered as literal text.
+type SummaryConfig struct {
+	Items []SummaryItem // Key-value pairs to display
+}
+
+// FileFilter defines a filter for file dialogs.
+type FileFilter struct {
+	Name     string   // Display name (e.g., "Text Files")
+	Patterns []string // File patterns (e.g., []string{"*.txt", "*.log"})
 }
 
 // Built-in button IDs

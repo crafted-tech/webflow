@@ -11,14 +11,15 @@ const (
 
 // Config holds the configuration for creating a new Flow.
 type Config struct {
-	Title             string     // Window title
-	Width             string     // Window width spec: "40em", "600", "80%" (default: "40em")
-	Height            string     // Window height spec: "30em", "450", "70%" (default: "30em")
-	Resizable         *bool      // nil or true = resizable, false = fixed size
-	Theme             *ThemeMode // nil = system (auto-detect)
-	NativeTitleBar    *bool      // nil or false = stylable titlebar, true = native system titlebar
-	PrimaryColorLight string     // HSL values for light mode, e.g., "142 70% 35%"
-	PrimaryColorDark  string     // HSL values for dark mode, e.g., "142 70% 50%"
+	Title             string                       // Window title
+	Width             string                       // Window width spec: "40em", "600", "80%" (default: "40em")
+	Height            string                       // Window height spec: "30em", "450", "70%" (default: "30em")
+	Resizable         *bool                        // nil or true = resizable, false = fixed size
+	Theme             *ThemeMode                   // nil = system (auto-detect)
+	NativeTitleBar    *bool                        // nil or false = stylable titlebar, true = native system titlebar
+	PrimaryColorLight string                       // HSL values for light mode, e.g., "142 70% 35%"
+	PrimaryColorDark  string                       // HSL values for dark mode, e.g., "142 70% 50%"
+	AppTranslations   map[string]map[string]string // App-specific translations: lang -> key -> value
 }
 
 // Option is a function that configures a Flow.
