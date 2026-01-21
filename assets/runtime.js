@@ -335,6 +335,10 @@
 
     // Change language (for welcome page language selector)
     window.changeLanguage = function(lang) {
+        // Notify backend of language change - backend will translate subsequent pages
+        sendMessage('change_language', { data: { language: lang } });
+
+        // Also update frontend i18n for immediate feedback on current page
         if (window.i18n) {
             window.i18n.setLanguage(lang);
             // Defer DOM updates to next event loop tick to allow native popup to fully dismiss.
@@ -404,6 +408,11 @@
         // Must be called here because appTranslations is defined after i18n.js loads
         if (window.i18n && window.i18n.init) {
             window.i18n.init();
+        }
+        // Set language from backend BEFORE translating
+        // This ensures the page is translated in the correct language on load
+        if (window._currentLanguage && window.i18n && window.i18n.setLanguage) {
+            window.i18n.setLanguage(window._currentLanguage);
         }
         // Translate all text on the page
         if (window.i18n && window.i18n.translatePage) {

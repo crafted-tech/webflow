@@ -854,8 +854,13 @@
     // Merged translations (library + app)
     const translations = {};
 
-    // Current language
+    // Current language (persisted to localStorage)
     let currentLang = 'en';
+    try {
+        currentLang = localStorage.getItem('webflow_lang') || 'en';
+    } catch (e) {
+        // localStorage may not be available in some contexts (WebViews, private browsing)
+    }
 
     // Initialize translations by merging library and app translations
     function initTranslations() {
@@ -1031,6 +1036,11 @@
     function setLanguage(lang) {
         if (translations[lang]) {
             currentLang = lang;
+            try {
+                localStorage.setItem('webflow_lang', lang);
+            } catch (e) {
+                // localStorage may not be available in some contexts
+            }
         }
     }
 

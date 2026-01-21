@@ -46,6 +46,7 @@ type Flow struct {
 	quitOnMsg         bool // Whether to quit the event loop when a message is received
 	primaryColorLight string
 	primaryColorDark  string
+	language          string // Current language code (e.g., "en", "es", "de")
 
 	// Progress control
 	progressCancelled atomic.Bool
@@ -71,6 +72,7 @@ func New(opts ...Option) (*Flow, error) {
 		responseCh:        make(chan messageResponse, 1),
 		primaryColorLight: cfg.PrimaryColorLight,
 		primaryColorDark:  cfg.PrimaryColorDark,
+		language:          "en", // Default language
 	}
 
 	// Create webview
@@ -203,6 +205,16 @@ func New(opts ...Option) (*Flow, error) {
 			return
 		}
 
+		if resp.Type == "change_language" {
+			if lang, ok := resp.Data["language"].(string); ok {
+				f.mu.Lock()
+				f.language = lang
+				f.mu.Unlock()
+				fmt.Printf("[webflow] Language changed to: %s\n", lang)
+			}
+			return
+		}
+
 		select {
 		case f.responseCh <- resp:
 			debugLog(fmt.Sprintf("message handler: sent to responseCh, button=%s", resp.Button))
@@ -240,7 +252,10 @@ func (f *Flow) Run() {
 // ShowPage displays a custom page and waits for user interaction.
 // This is the core building block - all other Show* methods use it internally.
 func (f *Flow) ShowPage(page Page) Response {
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 
 	f.wv.LoadHTML(html)
 	f.wv.Show()
@@ -453,7 +468,10 @@ func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy fu
 		ButtonBar: buttonBar,
 	}
 
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -711,7 +729,10 @@ func (f *Flow) ShowLog(title string, work func(log LogWriter)) {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -826,7 +847,10 @@ func (f *Flow) ShowFileProgress(title string, work func(files FileList)) {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -1028,7 +1052,10 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 	}
 
 	// Render page once
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -1094,7 +1121,10 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) bool {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
+	f.mu.Lock()
+	lang := f.language
+	f.mu.Unlock()
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark, lang, f.config.AppTranslations)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
