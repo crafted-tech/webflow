@@ -176,10 +176,11 @@ func New(opts ...Option) (*Flow, error) {
 			fmt.Printf("[webflow] Theme toggled via Shift+F5, new darkMode=%v\n", f.darkMode)
 
 			// Update CSS class instantly (no re-render needed)
+			// Use EvaluateScriptAsync to avoid deadlock when called from message handler
 			if f.darkMode {
-				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'dark')`)
+				f.wv.EvaluateScriptAsync(`document.documentElement.setAttribute('data-theme', 'dark')`)
 			} else {
-				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'light')`)
+				f.wv.EvaluateScriptAsync(`document.documentElement.setAttribute('data-theme', 'light')`)
 			}
 
 			// Update window frame decorations using fallback colors for manual toggle
