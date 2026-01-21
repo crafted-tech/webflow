@@ -232,14 +232,23 @@ type MenuItem struct {
 	Icon        string // Icon name or SVG (optional)
 }
 
+// ContentStyle defines the visual style for page content area.
+type ContentStyle int
+
+const (
+	ContentDefault  ContentStyle = iota // Default appearance (no border)
+	ContentBordered                     // Bordered scrollable area (for license text, logs)
+)
+
 // Page defines a wizard page with content and navigation buttons.
 type Page struct {
-	Title     string    // Main title displayed at the top
-	Subtitle  string    // Optional subtitle/description below the title
-	Icon      string    // Icon name ("info", "warning", "error", "success") or custom SVG
-	Content   any       // Content: string (message), []Choice, []FormField, or ProgressConfig
-	ButtonBar ButtonBar // Navigation buttons with fixed positions (preferred)
-	Buttons   []Button  // Deprecated: use ButtonBar instead. Legacy button array.
+	Title        string       // Main title displayed at the top
+	Subtitle     string       // Optional subtitle/description below the title
+	Icon         string       // Icon name ("info", "warning", "error", "success") or custom SVG
+	Content      any          // Content: string (message), []Choice, []FormField, or ProgressConfig
+	ContentStyle ContentStyle // Visual style for content area (default, bordered)
+	ButtonBar    ButtonBar    // Navigation buttons with fixed positions (preferred)
+	Buttons      []Button     // Deprecated: use ButtonBar instead. Legacy button array.
 }
 
 // ProgressConfig configures a progress page.
@@ -249,9 +258,10 @@ type ProgressConfig struct {
 
 // PageConfig holds configuration for pages that accept PageOption.
 type PageConfig struct {
-	ButtonBar *ButtonBar
-	Icon      string
-	Subtitle  string
+	ButtonBar    *ButtonBar
+	Icon         string
+	Subtitle     string
+	ContentStyle ContentStyle
 }
 
 // PageOption configures a page.
@@ -275,6 +285,15 @@ func WithIcon(icon string) PageOption {
 func WithSubtitle(subtitle string) PageOption {
 	return func(c *PageConfig) {
 		c.Subtitle = subtitle
+	}
+}
+
+// WithBorderedContent enables bordered style for the content area.
+// Use this for license text or similar scrollable content that benefits
+// from a visible border around the scrollable area.
+func WithBorderedContent() PageOption {
+	return func(c *PageConfig) {
+		c.ContentStyle = ContentBordered
 	}
 }
 

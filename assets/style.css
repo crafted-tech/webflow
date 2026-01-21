@@ -36,8 +36,6 @@ button, input, select, textarea {
 :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 25%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 25%;
     --primary: 142 70% 35%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96%;
@@ -57,8 +55,6 @@ button, input, select, textarea {
 [data-theme="dark"] {
     --background: 0 0% 14%;
     --foreground: 0 0% 90%;
-    --card: 0 0% 16%;
-    --card-foreground: 0 0% 90%;
     --primary: 142 70% 50%;
     --primary-foreground: 0 0% 10%;
     --secondary: 0 0% 22%;
@@ -111,11 +107,31 @@ button, input, select, textarea {
     margin-right: calc(-4px - 0.5rem);
 }
 
+/* Bordered variant for license text and similar scrollable content */
+.flow-content-bordered {
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    margin: 0;
+    padding-right: 0.75rem;
+    margin-right: 0;
+}
+
+/* When flow-content contains self-scrolling containers, disable its own scrolling */
+.flow-content:has(.log-container),
+.flow-content:has(.filelist-container),
+.flow-content:has(.review-container) {
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+
 .flow-footer {
     flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid hsl(var(--border));
 }
@@ -281,8 +297,7 @@ body.using-keyboard .btn:focus {
 }
 
 .form-group-inline .form-select {
-    flex: 1;
-    min-width: 0;
+    width: auto;
 }
 
 .form-label {
@@ -380,13 +395,13 @@ select, input[type="checkbox"], input[type="radio"], input[type="range"], progre
 .form-checkbox:checked::after {
     content: "";
     position: absolute;
-    left: 5px;
-    top: 1px;
-    width: 6px;
-    height: 10px;
+    left: 50%;
+    top: 45%;
+    width: 5px;
+    height: 9px;
     border: solid hsl(var(--primary-foreground));
     border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 /* Checkbox focus only on keyboard */
@@ -488,13 +503,13 @@ body.using-keyboard .choice-item:has(input:focus) {
 .choice-item input[type="checkbox"]:checked ~ .choice-checkbox::after {
     content: "";
     position: absolute;
-    left: 5px;
-    top: 1px;
-    width: 6px;
-    height: 10px;
+    left: 50%;
+    top: 45%;
+    width: 5px;
+    height: 9px;
     border: solid hsl(var(--primary-foreground));
     border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+    transform: translate(-50%, -50%) rotate(45deg);
 }
 
 .choice-content {
@@ -584,7 +599,7 @@ body.using-keyboard .menu-item:focus {
 .log-content {
     flex: 1;
     overflow-y: auto;
-    background-color: hsl(var(--muted));
+    background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
     padding: 0.75rem;
@@ -642,7 +657,7 @@ body.using-keyboard .menu-item:focus {
 .filelist-content {
     flex: 1;
     overflow-y: auto;
-    background-color: hsl(var(--muted));
+    background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
     padding: 0.5rem;
@@ -708,7 +723,7 @@ body.using-keyboard .menu-item:focus {
 .review-content {
     flex: 1;
     overflow-y: auto;
-    background-color: hsl(var(--muted));
+    background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
     padding: 0.75rem;

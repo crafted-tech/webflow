@@ -45,7 +45,11 @@ func renderPage(page Page, darkMode bool) string {
 `)
 
 	// Content
-	buf.WriteString(`        <div class="flow-content">
+	contentClass := "flow-content"
+	if page.ContentStyle == ContentBordered {
+		contentClass += " flow-content-bordered"
+	}
+	buf.WriteString(`        <div class="` + contentClass + `">
 `)
 	buf.WriteString(renderContent(page.Content))
 	buf.WriteString(`        </div>
