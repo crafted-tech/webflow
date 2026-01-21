@@ -38,7 +38,7 @@ button, input, select, textarea {
     --foreground: 0 0% 25%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 25%;
-    --primary: 0 0% 20%;
+    --primary: 142 70% 35%;
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96%;
     --secondary-foreground: 0 0% 25%;
@@ -50,7 +50,7 @@ button, input, select, textarea {
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 20%;
+    --ring: 142 70% 35%;
     --radius: 0.5rem;
 }
 
@@ -59,8 +59,8 @@ button, input, select, textarea {
     --foreground: 0 0% 90%;
     --card: 0 0% 16%;
     --card-foreground: 0 0% 90%;
-    --primary: 0 0% 82%;
-    --primary-foreground: 0 0% 14%;
+    --primary: 142 70% 50%;
+    --primary-foreground: 0 0% 10%;
     --secondary: 0 0% 22%;
     --secondary-foreground: 0 0% 90%;
     --muted: 0 0% 22%;
@@ -71,7 +71,7 @@ button, input, select, textarea {
     --destructive-foreground: 0 0% 95%;
     --border: 0 0% 26%;
     --input: 0 0% 26%;
-    --ring: 0 0% 65%;
+    --ring: 142 70% 50%;
 }
 
 /* Layout */
@@ -334,6 +334,11 @@ body.using-keyboard .btn:focus {
 .form-select:focus {
     border-color: hsl(var(--ring));
     box-shadow: inset 0 0 0 1px hsl(var(--ring));
+}
+
+/* Modern accent-color for form controls (checkboxes, radios, range, progress) */
+select, input[type="checkbox"], input[type="radio"], input[type="range"], progress {
+    accent-color: hsl(var(--primary));
 }
 
 .form-checkbox-group {
