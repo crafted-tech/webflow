@@ -8,7 +8,7 @@ import (
 )
 
 // renderPage generates the complete HTML for a flow page.
-func renderPage(page Page, darkMode bool) string {
+func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) string {
 	var buf bytes.Buffer
 
 	theme := "light"
@@ -16,12 +16,31 @@ func renderPage(page Page, darkMode bool) string {
 		theme = "dark"
 	}
 
+	// Build CSS with optional color overrides
+	css := cssContent
+	if primaryLight != "" || primaryDark != "" {
+		var colorCSS strings.Builder
+		colorCSS.WriteString("\n:root {")
+		if primaryLight != "" {
+			colorCSS.WriteString("\n    --primary: " + primaryLight + ";")
+			colorCSS.WriteString("\n    --ring: " + primaryLight + ";")
+		}
+		colorCSS.WriteString("\n}")
+		if primaryDark != "" {
+			colorCSS.WriteString("\n[data-theme=\"dark\"] {")
+			colorCSS.WriteString("\n    --primary: " + primaryDark + ";")
+			colorCSS.WriteString("\n    --ring: " + primaryDark + ";")
+			colorCSS.WriteString("\n}")
+		}
+		css += colorCSS.String()
+	}
+
 	buf.WriteString(`<!DOCTYPE html>
 <html lang="en" data-theme="` + theme + `">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>` + cssContent + `</style>
+    <style>` + css + `</style>
 </head>
 <body>
     <div class="flow-container">

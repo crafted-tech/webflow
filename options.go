@@ -11,12 +11,14 @@ const (
 
 // Config holds the configuration for creating a new Flow.
 type Config struct {
-	Title          string     // Window title
-	Width          string     // Window width spec: "40em", "600", "80%" (default: "40em")
-	Height         string     // Window height spec: "30em", "450", "70%" (default: "30em")
-	Resizable      *bool      // nil or true = resizable, false = fixed size
-	Theme          *ThemeMode // nil = system (auto-detect)
-	NativeTitleBar *bool      // nil or false = stylable titlebar, true = native system titlebar
+	Title             string     // Window title
+	Width             string     // Window width spec: "40em", "600", "80%" (default: "40em")
+	Height            string     // Window height spec: "30em", "450", "70%" (default: "30em")
+	Resizable         *bool      // nil or true = resizable, false = fixed size
+	Theme             *ThemeMode // nil = system (auto-detect)
+	NativeTitleBar    *bool      // nil or false = stylable titlebar, true = native system titlebar
+	PrimaryColorLight string     // HSL values for light mode, e.g., "142 70% 35%"
+	PrimaryColorDark  string     // HSL values for dark mode, e.g., "142 70% 50%"
 }
 
 // Option is a function that configures a Flow.
@@ -63,6 +65,19 @@ func WithTheme(mode ThemeMode) Option {
 func WithNativeTitleBar(native bool) Option {
 	return func(c *Config) {
 		c.NativeTitleBar = &native
+	}
+}
+
+// WithPrimaryColor sets custom primary color for light and dark modes.
+// Colors should be HSL values without the hsl() wrapper, e.g., "200 70% 50%".
+// Common colors:
+//   - Green:  "142 70% 35%" (light), "142 70% 50%" (dark)
+//   - Blue:   "217 91% 50%" (light), "217 91% 60%" (dark)
+//   - Purple: "270 70% 50%" (light), "270 70% 60%" (dark)
+func WithPrimaryColor(light, dark string) Option {
+	return func(c *Config) {
+		c.PrimaryColorLight = light
+		c.PrimaryColorDark = dark
 	}
 }
 

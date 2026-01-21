@@ -684,7 +684,7 @@ body.using-keyboard .menu-item:focus {
 }
 
 .filelist-icon.pending { color: hsl(var(--muted-foreground)); }
-.filelist-icon.in-progress { color: hsl(217 91% 60%); }
+.filelist-icon.in-progress { color: hsl(var(--muted-foreground)); }
 .filelist-icon.complete { color: hsl(142 71% 45%); }
 .filelist-icon.skipped { color: hsl(var(--muted-foreground)); }
 .filelist-icon.failed { color: hsl(var(--destructive)); }

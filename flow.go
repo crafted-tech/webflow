@@ -38,12 +38,14 @@ func debugLog(msg string) {
 
 // Flow manages the wizard UI, displaying pages and collecting user responses.
 type Flow struct {
-	wv         types.WebFrame
-	config     Config
-	responseCh chan messageResponse
-	darkMode   bool
-	mu         sync.Mutex
-	quitOnMsg  bool // Whether to quit the event loop when a message is received
+	wv                types.WebFrame
+	config            Config
+	responseCh        chan messageResponse
+	darkMode          bool
+	mu                sync.Mutex
+	quitOnMsg         bool // Whether to quit the event loop when a message is received
+	primaryColorLight string
+	primaryColorDark  string
 
 	// Progress control
 	progressCancelled atomic.Bool
@@ -65,8 +67,10 @@ func New(opts ...Option) (*Flow, error) {
 	}
 
 	f := &Flow{
-		config:     cfg,
-		responseCh: make(chan messageResponse, 1),
+		config:            cfg,
+		responseCh:        make(chan messageResponse, 1),
+		primaryColorLight: cfg.PrimaryColorLight,
+		primaryColorDark:  cfg.PrimaryColorDark,
 	}
 
 	// Create webview
@@ -236,7 +240,7 @@ func (f *Flow) Run() {
 // ShowPage displays a custom page and waits for user interaction.
 // This is the core building block - all other Show* methods use it internally.
 func (f *Flow) ShowPage(page Page) Response {
-	html := renderPage(page, f.darkMode)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 
 	f.wv.LoadHTML(html)
 	f.wv.Show()
@@ -552,7 +556,7 @@ func (f *Flow) ShowLog(title string, work func(log LogWriter)) {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -667,7 +671,7 @@ func (f *Flow) ShowFileProgress(title string, work func(files FileList)) {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -869,7 +873,7 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 	}
 
 	// Render page once
-	html := renderPage(page, f.darkMode)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
@@ -935,7 +939,7 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) bool {
 		ButtonBar: WizardProgress(),
 	}
 
-	html := renderPage(page, f.darkMode)
+	html := renderPage(page, f.darkMode, f.primaryColorLight, f.primaryColorDark)
 	f.wv.LoadHTML(html)
 	f.wv.Show()
 
