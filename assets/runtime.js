@@ -337,8 +337,12 @@
     window.changeLanguage = function(lang) {
         if (window.i18n) {
             window.i18n.setLanguage(lang);
-            // Re-translate the page using stored keys
-            window.i18n.retranslatePage();
+            // Defer DOM updates to next event loop tick to allow native popup to fully dismiss.
+            // This fixes crashes on macOS/iOS where WKWebView's <select> popup cleanup
+            // conflicts with immediate DOM manipulation.
+            setTimeout(function() {
+                window.i18n.retranslatePage();
+            }, 0);
         }
     };
 
