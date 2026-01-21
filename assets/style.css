@@ -32,6 +32,12 @@ button, input, select, textarea {
     font-size: 100%;
 }
 
+/* Text selection styling - uses primary color with transparency */
+::selection {
+    background-color: hsl(var(--primary) / 0.25);
+    color: inherit;
+}
+
 /* shadcn-inspired Design Tokens (pure neutral grays) */
 :root {
     --background: 0 0% 100%;

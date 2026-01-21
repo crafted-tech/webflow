@@ -34,7 +34,7 @@ func main() {
 	f, err := webflow.New(
 		webflow.WithTitle("Demo Installer"),
 		webflow.WithSize("45em", "35em"),
-		//webflow.WithResizable(false),
+		webflow.WithResizable(false),
 		//webflow.WithNativeTitleBar(true),
 	)
 	if err != nil {
