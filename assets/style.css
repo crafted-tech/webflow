@@ -32,46 +32,46 @@ button, input, select, textarea {
     font-size: 100%;
 }
 
-/* shadcn-inspired Design Tokens */
+/* shadcn-inspired Design Tokens (adjusted for softer contrast) */
 :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 220 10% 25%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --card-foreground: 220 10% 25%;
+    --primary: 220 10% 20%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 220 5% 96%;
+    --secondary-foreground: 220 10% 25%;
+    --muted: 220 5% 96%;
+    --muted-foreground: 220 5% 50%;
+    --accent: 220 5% 96%;
+    --accent-foreground: 220 10% 25%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 220 6% 90%;
+    --input: 220 6% 90%;
+    --ring: 220 10% 20%;
     --radius: 0.5rem;
 }
 
 [data-theme="dark"] {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --background: 0 0% 14%;
+    --foreground: 0 0% 82%;
+    --card: 0 0% 16%;
+    --card-foreground: 0 0% 82%;
+    --primary: 0 0% 82%;
+    --primary-foreground: 0 0% 14%;
+    --secondary: 0 0% 22%;
+    --secondary-foreground: 0 0% 82%;
+    --muted: 0 0% 22%;
+    --muted-foreground: 0 0% 58%;
+    --accent: 0 0% 22%;
+    --accent-foreground: 0 0% 82%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 95%;
+    --border: 0 0% 26%;
+    --input: 0 0% 26%;
+    --ring: 0 0% 65%;
 }
 
 /* Layout */
@@ -168,7 +168,7 @@ button, input, select, textarea {
     white-space: nowrap;
     border-radius: var(--radius);
     font-weight: 500;
-    font-size: 0.875rem;
+    font-size: 1rem;
     height: 2.5rem;
     padding: 0 1rem;
     border: 1px solid transparent;
@@ -287,7 +287,7 @@ body.using-keyboard .btn:focus {
 
 .form-label {
     display: block;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 500;
     margin-bottom: 0.5rem;
     color: hsl(var(--foreground));
@@ -301,7 +301,7 @@ body.using-keyboard .btn:focus {
     border: 1px solid hsl(var(--input));
     border-radius: var(--radius);
     color: hsl(var(--foreground));
-    font-size: 0.875rem;
+    font-size: 1rem;
     transition: border-color 0.15s ease;
 }
 

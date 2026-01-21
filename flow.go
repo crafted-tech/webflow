@@ -12,10 +12,10 @@ import (
 	"github.com/crafted-tech/webframe/types"
 )
 
-// Frame appearance colors for theme modes
+// Fallback frame colors when GetHeaderBarColor is not available
 var (
-	darkFrameColor  = types.RGBA{R: 0x24, G: 0x24, B: 0x24, A: 0xFF}
-	lightFrameColor = types.RGBA{R: 0xF5, G: 0xF5, B: 0xF5, A: 0xFF}
+	darkFrameColorFallback  = types.RGBA{R: 0x1C, G: 0x1F, B: 0x26, A: 0xFF}
+	lightFrameColorFallback = types.RGBA{R: 0xF4, G: 0xF5, B: 0xF7, A: 0xFF}
 )
 
 // debugLog writes to a crash log for debugging
@@ -108,13 +108,29 @@ func New(opts ...Option) (*Flow, error) {
 		fmt.Printf("[webflow] Theme: forced light, using darkMode=%v\n", f.darkMode)
 	}
 
-	// Set initial frame appearance to match theme
-	if f.darkMode {
-		fmt.Printf("[webflow] Setting frame appearance to dark (#242424)\n")
-		wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColor})
-	} else {
-		fmt.Printf("[webflow] Setting frame appearance to light (#F5F5F5)\n")
-		wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColor})
+	// Set initial frame appearance using system headerbar color
+	frameColor := wv.GetHeaderBarColor()
+	fmt.Printf("[webflow] Setting frame appearance to system color (#%02x%02x%02x)\n", frameColor.R, frameColor.G, frameColor.B)
+	wv.SetFrameAppearance(types.FrameAppearance{TitleBar: frameColor})
+
+	// Register for OS theme changes (only when using system theme)
+	if cfg.Theme == nil || *cfg.Theme == ThemeSystem {
+		wv.OnThemeChange(func(isDark bool) {
+			fmt.Printf("[webflow] OS theme changed: isDark=%v\n", isDark)
+			f.darkMode = isDark
+
+			// Update window frame decorations using system color
+			newFrameColor := f.wv.GetHeaderBarColor()
+			fmt.Printf("[webflow] Updating frame to system color (#%02x%02x%02x)\n", newFrameColor.R, newFrameColor.G, newFrameColor.B)
+			f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: newFrameColor})
+
+			// Update CSS class instantly
+			if f.darkMode {
+				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'dark')`)
+			} else {
+				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'light')`)
+			}
+		})
 	}
 
 	// Set up message handler
@@ -153,18 +169,19 @@ func New(opts ...Option) (*Flow, error) {
 			f.darkMode = !f.darkMode
 			fmt.Printf("[webflow] Theme toggled via Shift+F5, new darkMode=%v\n", f.darkMode)
 
-			// Update window frame decorations
-			if f.darkMode {
-				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColor})
-			} else {
-				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColor})
-			}
-
 			// Update CSS class instantly (no re-render needed)
 			if f.darkMode {
 				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'dark')`)
 			} else {
 				f.wv.EvaluateScript(`document.documentElement.setAttribute('data-theme', 'light')`)
+			}
+
+			// Update window frame decorations using fallback colors for manual toggle
+			// (we can't query system color since we're forcing a non-system theme)
+			if f.darkMode {
+				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: darkFrameColorFallback})
+			} else {
+				f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: lightFrameColorFallback})
 			}
 			return
 		}
