@@ -32,25 +32,25 @@ button, input, select, textarea {
     font-size: 100%;
 }
 
-/* shadcn-inspired Design Tokens (adjusted for softer contrast) */
+/* shadcn-inspired Design Tokens (pure neutral grays) */
 :root {
     --background: 0 0% 100%;
-    --foreground: 220 10% 25%;
+    --foreground: 0 0% 25%;
     --card: 0 0% 100%;
-    --card-foreground: 220 10% 25%;
-    --primary: 220 10% 20%;
+    --card-foreground: 0 0% 25%;
+    --primary: 0 0% 20%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 220 5% 96%;
-    --secondary-foreground: 220 10% 25%;
-    --muted: 220 5% 96%;
-    --muted-foreground: 220 5% 50%;
-    --accent: 220 5% 96%;
-    --accent-foreground: 220 10% 25%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 25%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 25%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 6% 90%;
-    --input: 220 6% 90%;
-    --ring: 220 10% 20%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 20%;
     --radius: 0.5rem;
 }
 
