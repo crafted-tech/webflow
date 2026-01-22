@@ -114,10 +114,10 @@ func main() {
 			// Installation type selection with translated options
 			resp := f.ShowChoice(
 				T("installType.title"),
-				[]string{
-					T("installType.full"),
-					T("installType.minimal"),
-					T("installType.custom"),
+				[]webflow.Choice{
+					{Label: T("installType.full")},
+					{Label: T("installType.minimal")},
+					{Label: T("installType.custom")},
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
@@ -139,12 +139,12 @@ func main() {
 			// Custom component selection with translated labels
 			resp := f.ShowMultiChoice(
 				T("components.title"),
-				[]string{
-					T("components.core"),
-					T("components.docs"),
-					T("components.examples"),
-					T("components.devtools"),
-					T("components.desktop"),
+				[]webflow.Choice{
+					{Label: T("components.core")},
+					{Label: T("components.docs")},
+					{Label: T("components.examples")},
+					{Label: T("components.devtools")},
+					{Label: T("components.desktop")},
 				},
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)

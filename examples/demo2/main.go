@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/crafted-tech/webflow"
@@ -96,7 +97,10 @@ func demoPageTypes(f *webflow.Flow) {
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
 				Close: webflow.NewButton("Close", webflow.ButtonClose),
 			}))
-			if webflow.IsBack(resp) || webflow.IsClose(resp) {
+			if webflow.IsClose(resp) {
+				os.Exit(0)
+			}
+			if webflow.IsBack(resp) {
 				return
 			}
 			if idx, ok := resp.(int); ok {
@@ -170,7 +174,6 @@ func demoSelections(f *webflow.Flow) {
 	const (
 		stepMenu step = iota
 		stepChoice
-		stepChoices
 		stepMultiChoice
 		stepMenuDemo
 	)
@@ -180,15 +183,17 @@ func demoSelections(f *webflow.Flow) {
 		switch current {
 		case stepMenu:
 			resp := f.ShowMenu("Selection Components", []webflow.MenuItem{
-				{Title: "ShowChoice", Description: "Single selection from string list", Icon: "file"},
-				{Title: "ShowChoices", Description: "Single selection with descriptions", Icon: "folder"},
-				{Title: "ShowMultiChoice", Description: "Multi-selection with checkboxes", Icon: "success"},
+				{Title: "ShowChoice", Description: "Single selection with optional descriptions", Icon: "folder"},
+				{Title: "ShowMultiChoice", Description: "Multi-selection with optional descriptions", Icon: "success"},
 				{Title: "ShowMenu", Description: "Clickable menu items with icons", Icon: "settings"},
 			}, webflow.WithButtonBar(webflow.ButtonBar{
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
 				Close: webflow.NewButton("Close", webflow.ButtonClose),
 			}))
-			if webflow.IsBack(resp) || webflow.IsClose(resp) {
+			if webflow.IsClose(resp) {
+				os.Exit(0)
+			}
+			if webflow.IsBack(resp) {
 				return
 			}
 			if idx, ok := resp.(int); ok {
@@ -197,28 +202,6 @@ func demoSelections(f *webflow.Flow) {
 
 		case stepChoice:
 			resp := f.ShowChoice(
-				"Select an Option",
-				[]string{
-					"Option A - First choice",
-					"Option B - Second choice",
-					"Option C - Third choice",
-				},
-				webflow.WithSubtitle("Simple string-based selection"),
-				webflow.WithButtonBar(webflow.ButtonBar{
-					Back:  webflow.NewButton("Back", webflow.ButtonBack),
-					Next:  webflow.NewButton("Select", webflow.ButtonNext).WithPrimary(),
-					Close: webflow.NewButton("Close", webflow.ButtonClose),
-				}),
-			)
-			if !webflow.IsBack(resp) && !webflow.IsClose(resp) {
-				if idx, ok := resp.(int); ok {
-					f.ShowMessage("Selection Made", fmt.Sprintf("You selected option %d", idx+1), webflow.WithIcon("success"))
-				}
-			}
-			current = stepMenu
-
-		case stepChoices:
-			resp := f.ShowChoices(
 				"Select a Plan",
 				[]webflow.Choice{
 					{Label: "Standard", Description: "Basic features, suitable for individuals"},
@@ -239,14 +222,14 @@ func demoSelections(f *webflow.Flow) {
 		case stepMultiChoice:
 			resp := f.ShowMultiChoice(
 				"Select Components",
-				[]string{
-					"Core Framework",
-					"Documentation",
-					"Example Projects",
-					"Developer Tools",
-					"Desktop Integration",
+				[]webflow.Choice{
+					{Label: "Core Framework", Description: "Required base components"},
+					{Label: "Documentation", Description: "User guides and API reference"},
+					{Label: "Example Projects", Description: "Sample code and tutorials"},
+					{Label: "Developer Tools", Description: "Build tools and debugging utilities"},
+					{Label: "Desktop Integration", Description: "Native OS features and shortcuts"},
 				},
-				webflow.WithSubtitle("Select multiple items"),
+				webflow.WithSubtitle("Select multiple items (with descriptions)"),
 				webflow.WithButtonBar(webflow.WizardMiddle()),
 			)
 			if !webflow.IsBack(resp) && !webflow.IsClose(resp) {
@@ -384,7 +367,10 @@ func demoProgress(f *webflow.Flow) {
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
 				Close: webflow.NewButton("Close", webflow.ButtonClose),
 			}))
-			if webflow.IsBack(resp) || webflow.IsClose(resp) {
+			if webflow.IsClose(resp) {
+				os.Exit(0)
+			}
+			if webflow.IsBack(resp) {
 				return
 			}
 			if idx, ok := resp.(int); ok {
@@ -539,7 +525,10 @@ func demoButtons(f *webflow.Flow) {
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
 				Close: webflow.NewButton("Close", webflow.ButtonClose),
 			}))
-			if webflow.IsBack(resp) || webflow.IsClose(resp) {
+			if webflow.IsClose(resp) {
+				os.Exit(0)
+			}
+			if webflow.IsBack(resp) {
 				return
 			}
 			if idx, ok := resp.(int); ok {
@@ -638,7 +627,10 @@ func demoDialogs(f *webflow.Flow) {
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
 				Close: webflow.NewButton("Close", webflow.ButtonClose),
 			}))
-			if webflow.IsBack(resp) || webflow.IsClose(resp) {
+			if webflow.IsClose(resp) {
+				os.Exit(0)
+			}
+			if webflow.IsBack(resp) {
 				return
 			}
 			if idx, ok := resp.(int); ok {

@@ -527,13 +527,6 @@ func renderWelcomeView(cfg WelcomeConfig) string {
 `, formattedMsg))
 	}
 
-	// Continue instruction
-	continueText := T("welcome.continue")
-	if continueText != "" {
-		buf.WriteString(fmt.Sprintf(`                <p class="welcome-continue">%s</p>
-`, html.EscapeString(continueText)))
-	}
-
 	// Language selector
 	if cfg.LanguageSelector {
 		buf.WriteString(`                <div class="welcome-language">

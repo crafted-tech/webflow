@@ -409,67 +409,15 @@ func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) any {
 	}
 }
 
-// ShowChoice displays a list of options for single selection.
+// ShowChoice displays a list of Choice structs for single selection.
+// Choices can have optional descriptions.
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
 //
 // Returns:
 //   - int (selected index, 0-based) if user clicked Next
 //   - Navigation (Back/Close/Cancel) for navigation
-func (f *Flow) ShowChoice(title string, options []string, opts ...PageOption) any {
-	// Apply default ButtonBar if none provided
-	hasButtonBar := false
-	for _, opt := range opts {
-		cfg := PageConfig{}
-		opt(&cfg)
-		if cfg.ButtonBar != nil {
-			hasButtonBar = true
-			break
-		}
-	}
-	if !hasButtonBar {
-		opts = append(opts, WithButtonBar(WizardMiddle()))
-	}
-
-	choices := make([]Choice, len(options))
-	for i, opt := range options {
-		choices[i] = Choice{Label: opt}
-	}
-
-	page := applyPageConfig(title, choices, opts)
-	msg := f.showPageInternal(page)
-
-	switch msg.Button {
-	case ButtonBack:
-		return Back
-	case ButtonClose, ButtonCancel, "":
-		if msg.Button == "" && msg.Type != "window_close" && msg.Data != nil {
-			// Proceed with selection
-			if idx, ok := msg.Data["_selected_index"].(float64); ok {
-				return int(idx)
-			}
-			return 0
-		}
-		return Close
-	case ButtonNext:
-		if idx, ok := msg.Data["_selected_index"].(float64); ok {
-			return int(idx)
-		}
-		return 0
-	default:
-		return Navigation(msg.Button)
-	}
-}
-
-// ShowChoices displays a list of Choice structs for single selection.
-// This provides more control over the display than ShowChoice.
-// Use WithButtonBar option to set navigation buttons.
-// Default is WizardMiddle() if no ButtonBar is provided.
-//
-// Returns:
-//   - int (selected index, 0-based) if user clicked Next
-//   - Navigation (Back/Close/Cancel) for navigation
-func (f *Flow) ShowChoices(title string, choices []Choice, opts ...PageOption) any {
+func (f *Flow) ShowChoice(title string, choices []Choice, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -839,13 +787,14 @@ func (f *Flow) ShowTextInput(title, label, defaultValue string, opts ...PageOpti
 }
 
 // ShowMultiChoice displays a multi-selection list (checkboxes).
+// Choices can have optional descriptions.
 // Use WithButtonBar option to set navigation buttons.
 // Default is WizardMiddle() if no ButtonBar is provided.
 //
 // Returns:
 //   - []int (selected indices, 0-based) if user clicked Next
 //   - Navigation (Back/Close) for navigation
-func (f *Flow) ShowMultiChoice(title string, options []string, opts ...PageOption) any {
+func (f *Flow) ShowMultiChoice(title string, choices []Choice, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
 	hasButtonBar := false
 	for _, opt := range opts {
@@ -858,11 +807,6 @@ func (f *Flow) ShowMultiChoice(title string, options []string, opts ...PageOptio
 	}
 	if !hasButtonBar {
 		opts = append(opts, WithButtonBar(WizardMiddle()))
-	}
-
-	choices := make([]Choice, len(options))
-	for i, opt := range options {
-		choices[i] = Choice{Label: opt}
 	}
 
 	mc := MultiChoice{Choices: choices}

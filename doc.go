@@ -23,8 +23,12 @@ Create a new Flow and display pages using the Show* methods:
 
 	// Choice selection
 	selected, _ := f.ShowChoice("Select Type",
-		[]string{"Full Installation", "Minimal", "Custom"},
-		webflow.BackButton, webflow.NextButton,
+		[]webflow.Choice{
+			{Label: "Full Installation"},
+			{Label: "Minimal"},
+			{Label: "Custom"},
+		},
+		webflow.WithButtonBar(webflow.WizardMiddle()),
 	)
 
 	// Form input
@@ -52,8 +56,8 @@ Create a new Flow and display pages using the Show* methods:
 The package provides several methods for different page types:
 
   - ShowMessage: Display text with configurable buttons
-  - ShowChoice: Display single-selection options from strings
-  - ShowChoices: Display single-selection with Choice structs (labels + descriptions)
+  - ShowChoice: Display single-selection with Choice structs (labels + optional descriptions)
+  - ShowMultiChoice: Display multi-selection with Choice structs (labels + optional descriptions)
   - ShowForm: Display a form with various input types
   - ShowProgress: Display a progress bar with cancellation support
   - ShowPage: Display a fully custom page (advanced use)

@@ -398,7 +398,7 @@ type WelcomeConfig struct {
 	Logo             []byte // Optional SVG/PNG logo data
 	LogoHeight       int    // Logo height in pixels (0 for default: 64)
 	Title            string // Main title
-	Message          string // Welcome message
+	Message          string // Welcome message (can include continue instructions if desired)
 	LanguageSelector bool   // Show language selector
 }
 

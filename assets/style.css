@@ -98,7 +98,6 @@ button, input, select, textarea {
 }
 
 .flow-subtitle {
-    font-size: 0.875rem;
     color: hsl(var(--muted-foreground));
 }
 
