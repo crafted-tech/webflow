@@ -259,23 +259,15 @@ type MenuItem struct {
 	Icon        string // Icon name or SVG (optional)
 }
 
-// ContentStyle defines the visual style for page content area.
-type ContentStyle int
-
-const (
-	ContentDefault  ContentStyle = iota // Default appearance (no border)
-	ContentBordered                     // Bordered scrollable area (for license text, logs)
-)
 
 // Page defines a wizard page with content and navigation buttons.
 type Page struct {
-	Title        string       // Main title displayed at the top
-	Subtitle     string       // Optional subtitle/description below the title
-	Icon         string       // Icon name ("info", "warning", "error", "success") or custom SVG
-	Content      any          // Content: string (message), []Choice, []FormField, or ProgressConfig
-	ContentStyle ContentStyle // Visual style for content area (default, bordered)
-	ButtonBar    ButtonBar    // Navigation buttons with fixed positions (preferred)
-	Buttons      []Button     // Deprecated: use ButtonBar instead. Legacy button array.
+	Title     string    // Main title displayed at the top
+	Subtitle  string    // Optional subtitle/description below the title
+	Icon      string    // Icon name ("info", "warning", "error", "success") or custom SVG
+	Content   any       // Content: string (message), []Choice, []FormField, or ProgressConfig
+	ButtonBar ButtonBar // Navigation buttons with fixed positions (preferred)
+	Buttons   []Button  // Deprecated: use ButtonBar instead. Legacy button array.
 }
 
 // ProgressConfig configures a progress page.
@@ -285,10 +277,9 @@ type ProgressConfig struct {
 
 // PageConfig holds configuration for pages that accept PageOption.
 type PageConfig struct {
-	ButtonBar    *ButtonBar
-	Icon         string
-	Subtitle     string
-	ContentStyle ContentStyle
+	ButtonBar *ButtonBar
+	Icon      string
+	Subtitle  string
 }
 
 // PageOption configures a page.
@@ -312,15 +303,6 @@ func WithIcon(icon string) PageOption {
 func WithSubtitle(subtitle string) PageOption {
 	return func(c *PageConfig) {
 		c.Subtitle = subtitle
-	}
-}
-
-// WithBorderedContent enables bordered style for the content area.
-// Use this for license text or similar scrollable content that benefits
-// from a visible border around the scrollable area.
-func WithBorderedContent() PageOption {
-	return func(c *PageConfig) {
-		c.ContentStyle = ContentBordered
 	}
 }
 
@@ -435,11 +417,24 @@ type ConfirmCheckboxConfig struct {
 	WarningMessage string // Optional warning message (shown in yellow/orange)
 }
 
+// AlertType defines the type of inline alert for summary items.
+type AlertType string
+
+const (
+	AlertNone    AlertType = ""        // Default: render as key-value
+	AlertInfo    AlertType = "info"    // Blue info box
+	AlertWarning AlertType = "warning" // Yellow/amber warning box
+	AlertError   AlertType = "error"   // Red error box
+	AlertSuccess AlertType = "success" // Green success box
+)
+
 // SummaryItem represents a single key-value pair in a summary display.
 // Used for "Ready to Install" pages where labels need translation but values are literal.
+// If AlertType is set, the item renders as an alert box with icon instead of key-value.
 type SummaryItem struct {
-	Label string // Label text (use T() for translation keys)
-	Value string // Literal value (rendered as-is)
+	Label     string    // Label text (use T() for translation keys); unused for alerts
+	Value     string    // Literal value (rendered as-is); for alerts: the message
+	AlertType AlertType // If set, render as alert box with icon instead of key-value
 }
 
 // SummaryCheckbox represents an acknowledgment checkbox in a summary display.

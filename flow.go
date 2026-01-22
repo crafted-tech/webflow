@@ -251,6 +251,11 @@ func New(opts ...Option) (*Flow, error) {
 		}
 	})
 
+	// Auto-initialize translations if app translations were provided
+	if cfg.AppTranslations != nil {
+		SetLanguage("en", cfg.AppTranslations)
+	}
+
 	return f, nil
 }
 
@@ -350,11 +355,10 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 	}
 
 	page := Page{
-		Title:        title,
-		Content:      content,
-		Icon:         cfg.Icon,
-		Subtitle:     cfg.Subtitle,
-		ContentStyle: cfg.ContentStyle,
+		Title:    title,
+		Content:  content,
+		Icon:     cfg.Icon,
+		Subtitle: cfg.Subtitle,
 	}
 
 	if cfg.ButtonBar != nil {

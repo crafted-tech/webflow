@@ -100,7 +100,6 @@ func main() {
 				licenseText,
 				webflow.WithSubtitle(T("license.label")),
 				webflow.WithButtonBar(webflow.WizardLicense()),
-				webflow.WithBorderedContent(),
 			)
 			if webflow.IsBack(resp) {
 				step = stepWelcome

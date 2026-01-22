@@ -74,29 +74,21 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 `)
 
 	// Content
+	contentHTML, needsPassthrough := renderContent(page.Content)
 	contentClass := "flow-content"
-	if page.ContentStyle == ContentBordered {
-		contentClass += " flow-content-bordered"
+	if needsPassthrough {
+		contentClass += " flow-content-passthrough"
 	}
 	buf.WriteString(`        <div class="` + contentClass + `">
 `)
-	buf.WriteString(renderContent(page.Content))
+	buf.WriteString(contentHTML)
 	buf.WriteString(`        </div>
 `)
 
 	// Footer with buttons - prefer ButtonBar over legacy Buttons array
 	buf.WriteString(renderButtonBar(page))
 
-	// Get current language for frontend language selector
-	langMu.RLock()
-	lang := currentLanguage
-	langMu.RUnlock()
-
 	buf.WriteString(`    </div>
-    <script>window._currentLanguage = "` + lang + `";</script>
-    <script>` + getLibraryTranslationsJS() + `</script>
-    <script>` + getAppTranslationsJS() + `</script>
-    <script>` + i18nJSContent + `</script>
     <script>` + jsContent + `</script>
 </body>
 </html>`)
@@ -136,40 +128,42 @@ func renderIcon(icon string) string {
 }
 
 // renderContent renders the page content based on its type.
-func renderContent(content any) string {
+// Returns (html, needsPassthrough) where needsPassthrough indicates the content
+// handles its own scrolling and the parent should use overflow:hidden.
+func renderContent(content any) (string, bool) {
 	if content == nil {
-		return ""
+		return "", false
 	}
 
 	switch c := content.(type) {
 	case string:
-		return renderMessage(c)
+		return renderMessage(c), false
 	case []Choice:
-		return renderChoiceList(c)
+		return renderChoiceList(c), false
 	case MultiChoice:
-		return renderMultiChoiceList(c)
+		return renderMultiChoiceList(c), false
 	case []MenuItem:
-		return renderMenuList(c)
+		return renderMenuList(c), false
 	case []FormField:
-		return renderForm(c)
+		return renderForm(c), false
 	case ProgressConfig:
-		return renderProgress()
+		return renderProgress(), false
 	case LogConfig:
-		return renderLogView()
+		return renderLogView(), true
 	case FileListConfig:
-		return renderFileListView()
+		return renderFileListView(), true
 	case ReviewConfig:
-		return renderReviewView(c)
+		return renderReviewView(c), true
 	case WelcomeConfig:
-		return renderWelcomeView(c)
+		return renderWelcomeView(c), false
 	case LicenseConfig:
-		return renderLicenseView(c)
+		return renderLicenseView(c), true
 	case ConfirmCheckboxConfig:
-		return renderConfirmCheckboxView(c)
+		return renderConfirmCheckboxView(c), false
 	case SummaryConfig:
-		return renderSummaryView(c)
+		return renderSummaryView(c), false
 	default:
-		return ""
+		return "", false
 	}
 }
 
@@ -546,7 +540,20 @@ func renderWelcomeView(cfg WelcomeConfig) string {
                     <label class="form-label" for="language-select">` + T("welcome.languageLabel") + `</label>
                     <div class="select-wrapper">
                         <select id="language-select" class="form-input" onchange="window.changeLanguage(this.value)">
-                        </select>
+`)
+		// Render language options (backend provides full list)
+		langMu.RLock()
+		currLang := currentLanguage
+		langMu.RUnlock()
+		for _, lang := range GetAvailableLanguages() {
+			selected := ""
+			if lang.Code == currLang {
+				selected = " selected"
+			}
+			buf.WriteString(fmt.Sprintf(`                            <option value="%s"%s>%s</option>
+`, html.EscapeString(lang.Code), selected, html.EscapeString(lang.Name)))
+		}
+		buf.WriteString(`                        </select>
                         ` + selectChevron + `
                     </div>
                 </div>
@@ -596,10 +603,14 @@ func renderConfirmCheckboxView(cfg ConfirmCheckboxConfig) string {
 
 	// Warning message (if any)
 	if cfg.WarningMessage != "" {
+		icon := GetIcon("warning")
 		escapedWarn := html.EscapeString(cfg.WarningMessage)
 		formattedWarn := strings.ReplaceAll(escapedWarn, "\n", "<br>")
-		buf.WriteString(fmt.Sprintf(`            <div class="confirm-warning">%s</div>
-`, formattedWarn))
+		buf.WriteString(fmt.Sprintf(`            <div class="summary-alert summary-alert-warning">
+                <span class="summary-alert-icon">%s</span>
+                <span class="summary-alert-text">%s</span>
+            </div>
+`, icon, formattedWarn))
 	}
 
 	// Required checkbox
@@ -619,20 +630,48 @@ func renderConfirmCheckboxView(cfg ConfirmCheckboxConfig) string {
 // renderSummaryView renders a summary with labeled key-value pairs and optional checkboxes.
 // Labels can contain translation keys (with \x01 prefix) which the frontend will translate.
 // Values are rendered as literal text.
+// Items with AlertType set are rendered as alert boxes with icons.
 func renderSummaryView(cfg SummaryConfig) string {
 	var buf bytes.Buffer
-	buf.WriteString(`            <dl class="summary-list">
-`)
+
+	// Separate regular items from alert items
+	var regularItems []SummaryItem
+	var alertItems []SummaryItem
 	for _, item := range cfg.Items {
-		// Handle multiline values (convert newlines to <br>)
-		escapedValue := html.EscapeString(item.Value)
-		formattedValue := strings.ReplaceAll(escapedValue, "\n", "<br>")
-		buf.WriteString(fmt.Sprintf(`                <dt>%s</dt>
+		if item.AlertType != "" {
+			alertItems = append(alertItems, item)
+		} else {
+			regularItems = append(regularItems, item)
+		}
+	}
+
+	// Render regular key-value pairs
+	if len(regularItems) > 0 {
+		buf.WriteString(`            <dl class="summary-list">
+`)
+		for _, item := range regularItems {
+			// Handle multiline values (convert newlines to <br>)
+			escapedValue := html.EscapeString(item.Value)
+			formattedValue := strings.ReplaceAll(escapedValue, "\n", "<br>")
+			buf.WriteString(fmt.Sprintf(`                <dt>%s</dt>
                 <dd>%s</dd>
 `, html.EscapeString(item.Label), formattedValue))
-	}
-	buf.WriteString(`            </dl>
+		}
+		buf.WriteString(`            </dl>
 `)
+	}
+
+	// Render alert items
+	for _, item := range alertItems {
+		icon := GetIcon(string(item.AlertType))
+		escapedValue := html.EscapeString(item.Value)
+		formattedValue := strings.ReplaceAll(escapedValue, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`            <div class="summary-alert summary-alert-%s">
+                <span class="summary-alert-icon">%s</span>
+                <span class="summary-alert-text">%s</span>
+            </div>
+`, item.AlertType, icon, formattedValue))
+	}
 
 	// Render checkboxes if any
 	if len(cfg.Checkboxes) > 0 {
@@ -650,10 +689,14 @@ func renderSummaryView(cfg SummaryConfig) string {
 		for _, cb := range cfg.Checkboxes {
 			// Warning box (if present)
 			if cb.Warning != "" {
+				icon := GetIcon("warning")
 				escapedWarn := html.EscapeString(cb.Warning)
 				formattedWarn := strings.ReplaceAll(escapedWarn, "\n", "<br>")
-				buf.WriteString(fmt.Sprintf(`                <div class="confirm-warning">%s</div>
-`, formattedWarn))
+				buf.WriteString(fmt.Sprintf(`                <div class="summary-alert summary-alert-warning">
+                    <span class="summary-alert-icon">%s</span>
+                    <span class="summary-alert-text">%s</span>
+                </div>
+`, icon, formattedWarn))
 			}
 
 			// Checkbox with data attributes for JS

@@ -367,29 +367,6 @@
         sendMessage('change_language', { data: { language: lang } });
     };
 
-    // Initialize language selector options (called after i18n is ready)
-    function initLanguageSelector() {
-        var select = document.getElementById('language-select');
-        if (!select || !window.i18n) return;
-
-        var languages = window.i18n.getAvailableLanguages();
-        var currentLang = window.i18n.getLanguage();
-
-        // Clear existing options
-        select.innerHTML = '';
-
-        // Add language options
-        languages.forEach(function(lang) {
-            var option = document.createElement('option');
-            option.value = lang.code;
-            option.textContent = lang.name;
-            if (lang.code === currentLang) {
-                option.selected = true;
-            }
-            select.appendChild(option);
-        });
-    }
-
     // Focus management on page load
     // If page has focusable content, focus first content element
     // If page has no focusable content, focus the primary/default button
@@ -419,19 +396,10 @@
         }
     }
 
-    // Initialize page (focus and language selector)
-    // Translation is now done by the backend - HTML arrives fully translated.
+    // Initialize page (focus and UI state)
+    // Translation is done by the backend - HTML arrives fully translated.
+    // Language selector options are also rendered by the backend.
     function initPage() {
-        // Initialize translations for language selector to show language names
-        if (window.i18n && window.i18n.init) {
-            window.i18n.init();
-        }
-        // Set language for i18n to know which language is selected in the dropdown
-        if (window._currentLanguage && window.i18n && window.i18n.setLanguage) {
-            window.i18n.setLanguage(window._currentLanguage);
-        }
-        // Initialize language selector if present (needs i18n for language names)
-        initLanguageSelector();
         // Initialize summary checkboxes if present (disables Install button until checked)
         if (window._summaryHasRequiredCheckboxes) {
             window.updateSummaryCheckboxes();

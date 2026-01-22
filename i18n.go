@@ -5,6 +5,7 @@ package webflow
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -188,6 +189,40 @@ func lookupTranslation(key, lang string, appTrans map[string]map[string]string) 
 // These are merged with library translations on the frontend.
 var appTranslations map[string]map[string]string
 
+// LanguageInfo holds the code and display name for a language.
+type LanguageInfo struct {
+	Code string // e.g., "en", "de", "zh-Hans"
+	Name string // e.g., "English", "Deutsch", "简体中文"
+}
+
+// GetAvailableLanguages returns all available languages sorted with English first,
+// then the rest alphabetically by display name.
+func GetAvailableLanguages() []LanguageInfo {
+	var langs []LanguageInfo
+	for code, trans := range libraryTranslations {
+		name := code
+		if n, ok := trans["_name"]; ok {
+			name = n
+		}
+		langs = append(langs, LanguageInfo{Code: code, Name: name})
+	}
+
+	// Sort: English first, then alphabetically by name
+	sort.Slice(langs, func(i, j int) bool {
+		// English always first
+		if langs[i].Code == "en" {
+			return true
+		}
+		if langs[j].Code == "en" {
+			return false
+		}
+		// Rest sorted alphabetically by name
+		return langs[i].Name < langs[j].Name
+	})
+
+	return langs
+}
+
 // WithAppTranslations sets application-specific translations that are merged
 // with the library's built-in translations. App translations take precedence.
 //
@@ -204,27 +239,4 @@ func WithAppTranslations(translations map[string]map[string]string) Option {
 		c.AppTranslations = translations
 		appTranslations = translations // Also store in global for template access
 	}
-}
-
-// getAppTranslationsJS returns JavaScript code that defines app translations.
-// This is injected into the HTML page and merged with library translations.
-func getAppTranslationsJS() string {
-	if appTranslations == nil || len(appTranslations) == 0 {
-		return "const appTranslations = {};"
-	}
-	js, err := json.Marshal(appTranslations)
-	if err != nil {
-		return "const appTranslations = {};"
-	}
-	return "const appTranslations = " + string(js) + ";"
-}
-
-// getLibraryTranslationsJS returns JavaScript code that defines library translations.
-// This is injected into the HTML page for frontend translation support.
-func getLibraryTranslationsJS() string {
-	js, err := json.Marshal(libraryTranslations)
-	if err != nil {
-		return "const libraryTranslations = {};"
-	}
-	return "const libraryTranslations = " + string(js) + ";"
 }

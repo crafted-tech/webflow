@@ -12,12 +12,6 @@ var cssContent string
 //go:embed assets/runtime.js
 var jsContent string
 
-// i18nJS contains the embedded i18n/translation system for the flow UI.
-// This must be loaded before runtime.js in the HTML.
-//
-//go:embed assets/i18n.js
-var i18nJSContent string
-
 // translationsJSON contains the embedded library translations as JSON.
 // This is the single source of truth for all 12 languages.
 //
