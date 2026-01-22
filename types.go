@@ -442,11 +442,21 @@ type SummaryItem struct {
 	Value string // Literal value (rendered as-is)
 }
 
+// SummaryCheckbox represents an acknowledgment checkbox in a summary display.
+// Used for downgrade/reinstall confirmations that require user acknowledgment.
+type SummaryCheckbox struct {
+	ID       string // Identifier for the checkbox (e.g., "downgrade", "reinstall")
+	Label    string // Checkbox label text
+	Required bool   // If true, Install button disabled until checked
+	Warning  string // Optional warning text shown above checkbox (yellow box)
+}
+
 // SummaryConfig configures a summary/review display with labeled key-value pairs.
 // The frontend translates labels (if they have translation prefix) while values
 // are rendered as literal text.
 type SummaryConfig struct {
-	Items []SummaryItem // Key-value pairs to display
+	Items      []SummaryItem     // Key-value pairs to display
+	Checkboxes []SummaryCheckbox // Optional acknowledgment checkboxes
 }
 
 // FileFilter defines a filter for file dialogs.

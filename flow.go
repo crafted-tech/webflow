@@ -80,6 +80,7 @@ func New(opts ...Option) (*Flow, error) {
 	nativeTitleBar := cfg.NativeTitleBar != nil && *cfg.NativeTitleBar // nil or false = stylable titlebar
 	wvConfig := types.Config{
 		Title:          cfg.Title,
+		Icon:           cfg.Icon,
 		Width:          cfg.Width,
 		Height:         cfg.Height,
 		Resizable:      resizable,
@@ -703,9 +704,6 @@ func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) any {
 	if !hasButtonBar {
 		opts = append(opts, WithButtonBar(WizardLicense()))
 	}
-
-	// Apply bordered content style for license text
-	opts = append(opts, WithBorderedContent())
 
 	page := applyPageConfig(cfg.Title, cfg, opts)
 	msg := f.showPageInternal(page)

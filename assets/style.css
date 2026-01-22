@@ -126,10 +126,13 @@ button, input, select, textarea {
 /* When flow-content contains self-scrolling containers, disable its own scrolling */
 .flow-content:has(.log-container),
 .flow-content:has(.filelist-container),
-.flow-content:has(.review-container) {
+.flow-content:has(.review-container),
+.flow-content:has(.license-content) {
     overflow: hidden;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .flow-footer {
@@ -830,18 +833,24 @@ body.using-keyboard .menu-item:focus {
 }
 
 .welcome-title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
     font-weight: 600;
     color: hsl(var(--foreground));
     margin: 0;
 }
 
 .welcome-message {
-    font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
+    font-size: 1rem;
+    color: hsl(var(--foreground));
     line-height: 1.6;
     max-width: 400px;
     margin: 0;
+}
+
+.welcome-continue {
+    font-size: 1rem;
+    color: hsl(var(--foreground));
+    margin-top: 0.5rem;
 }
 
 .welcome-language {
@@ -865,13 +874,15 @@ body.using-keyboard .menu-item:focus {
 
 /* License view */
 .license-label {
+    flex-shrink: 0;
     font-size: 0.875rem;
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--foreground));
     margin-bottom: 0.75rem;
 }
 
 .license-content {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
@@ -882,7 +893,14 @@ body.using-keyboard .menu-item:focus {
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
-    max-height: 250px;
+}
+
+.license-instruction {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
+    margin-top: 0.75rem;
+    margin-bottom: 0;
 }
 
 /* Confirmation warning */
@@ -918,4 +936,22 @@ body.using-keyboard .menu-item:focus {
 .summary-list dd {
     margin: 0;
     color: hsl(var(--foreground));
+}
+
+/* Summary checkboxes (acknowledgment checkboxes) */
+.summary-checkboxes {
+    margin-top: 1rem;
+}
+
+.summary-checkboxes .confirm-warning {
+    margin-top: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.summary-checkboxes .form-group {
+    margin-bottom: 0.5rem;
+}
+
+.summary-checkboxes .form-group:last-child {
+    margin-bottom: 0;
 }

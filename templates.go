@@ -94,8 +94,9 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 
 	buf.WriteString(`    </div>
     <script>window._currentLanguage = "` + lang + `";</script>
-    <script>` + i18nJSContent + `</script>
+    <script>` + getLibraryTranslationsJS() + `</script>
     <script>` + getAppTranslationsJS() + `</script>
+    <script>` + i18nJSContent + `</script>
     <script>` + jsContent + `</script>
 </body>
 </html>`)
@@ -532,6 +533,13 @@ func renderWelcomeView(cfg WelcomeConfig) string {
 `, formattedMsg))
 	}
 
+	// Continue instruction
+	continueText := T("welcome.continue")
+	if continueText != "" {
+		buf.WriteString(fmt.Sprintf(`                <p class="welcome-continue">%s</p>
+`, html.EscapeString(continueText)))
+	}
+
 	// Language selector
 	if cfg.LanguageSelector {
 		buf.WriteString(`                <div class="welcome-language">
@@ -554,7 +562,7 @@ func renderWelcomeView(cfg WelcomeConfig) string {
 func renderLicenseView(cfg LicenseConfig) string {
 	var buf bytes.Buffer
 
-	// Label/instruction text
+	// Top label
 	if cfg.Label != "" {
 		buf.WriteString(fmt.Sprintf(`            <p class="license-label">%s</p>
 `, html.EscapeString(cfg.Label)))
@@ -563,6 +571,13 @@ func renderLicenseView(cfg LicenseConfig) string {
 	// License content in a bordered scrollable area
 	buf.WriteString(fmt.Sprintf(`            <div class="license-content">%s</div>
 `, html.EscapeString(cfg.Content)))
+
+	// Bottom instruction label (button text is embedded in translation)
+	instruction := T("license.instruction")
+	if instruction != "" {
+		buf.WriteString(fmt.Sprintf(`            <p class="license-instruction">%s</p>
+`, html.EscapeString(instruction)))
+	}
 
 	return buf.String()
 }
@@ -601,7 +616,7 @@ func renderConfirmCheckboxView(cfg ConfirmCheckboxConfig) string {
 	return buf.String()
 }
 
-// renderSummaryView renders a summary with labeled key-value pairs.
+// renderSummaryView renders a summary with labeled key-value pairs and optional checkboxes.
 // Labels can contain translation keys (with \x01 prefix) which the frontend will translate.
 // Values are rendered as literal text.
 func renderSummaryView(cfg SummaryConfig) string {
@@ -609,12 +624,61 @@ func renderSummaryView(cfg SummaryConfig) string {
 	buf.WriteString(`            <dl class="summary-list">
 `)
 	for _, item := range cfg.Items {
+		// Handle multiline values (convert newlines to <br>)
+		escapedValue := html.EscapeString(item.Value)
+		formattedValue := strings.ReplaceAll(escapedValue, "\n", "<br>")
 		buf.WriteString(fmt.Sprintf(`                <dt>%s</dt>
                 <dd>%s</dd>
-`, html.EscapeString(item.Label), html.EscapeString(item.Value)))
+`, html.EscapeString(item.Label), formattedValue))
 	}
 	buf.WriteString(`            </dl>
 `)
+
+	// Render checkboxes if any
+	if len(cfg.Checkboxes) > 0 {
+		// Track whether any checkboxes are required (for button disabling)
+		hasRequired := false
+		for _, cb := range cfg.Checkboxes {
+			if cb.Required {
+				hasRequired = true
+				break
+			}
+		}
+
+		buf.WriteString(`            <div class="summary-checkboxes">
+`)
+		for _, cb := range cfg.Checkboxes {
+			// Warning box (if present)
+			if cb.Warning != "" {
+				escapedWarn := html.EscapeString(cb.Warning)
+				formattedWarn := strings.ReplaceAll(escapedWarn, "\n", "<br>")
+				buf.WriteString(fmt.Sprintf(`                <div class="confirm-warning">%s</div>
+`, formattedWarn))
+			}
+
+			// Checkbox with data attributes for JS
+			requiredAttr := ""
+			if cb.Required {
+				requiredAttr = ` data-required="true"`
+			}
+			buf.WriteString(fmt.Sprintf(`                <div class="form-group">
+                    <div class="form-checkbox-group">
+                        <input type="checkbox" id="%s" class="form-checkbox summary-checkbox"%s onchange="window.updateSummaryCheckboxes()">
+                        <label class="form-label" for="%s">%s</label>
+                    </div>
+                </div>
+`, html.EscapeString(cb.ID), requiredAttr, html.EscapeString(cb.ID), html.EscapeString(cb.Label)))
+		}
+		buf.WriteString(`            </div>
+`)
+
+		// Add data attribute to enable JS tracking if any required checkboxes
+		if hasRequired {
+			buf.WriteString(`            <script>window._summaryHasRequiredCheckboxes = true;</script>
+`)
+		}
+	}
+
 	return buf.String()
 }
 

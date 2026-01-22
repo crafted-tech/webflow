@@ -12,6 +12,7 @@ const (
 // Config holds the configuration for creating a new Flow.
 type Config struct {
 	Title             string                       // Window title
+	Icon              []byte                       // Window icon (PNG data for titlebar/taskbar)
 	Width             string                       // Window width spec: "40em", "600", "80%" (default: "40em")
 	Height            string                       // Window height spec: "30em", "450", "70%" (default: "30em")
 	Resizable         *bool                        // nil or true = resizable, false = fixed size
@@ -29,6 +30,14 @@ type Option func(*Config)
 func WithTitle(title string) Option {
 	return func(c *Config) {
 		c.Title = title
+	}
+}
+
+// WithWindowIcon sets the window icon (titlebar/taskbar).
+// Accepts PNG image data which will be wrapped in ICO format on Windows.
+func WithWindowIcon(pngData []byte) Option {
+	return func(c *Config) {
+		c.Icon = pngData
 	}
 }
 

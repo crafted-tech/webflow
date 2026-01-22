@@ -334,6 +334,33 @@
         }
     };
 
+    // Update Install button based on summary checkboxes (for Summary page with required checkboxes)
+    window.updateSummaryCheckboxes = function() {
+        // Only process if we have required checkboxes
+        if (!window._summaryHasRequiredCheckboxes) return;
+
+        // Check if all required checkboxes are checked
+        var requiredCheckboxes = document.querySelectorAll('.summary-checkbox[data-required="true"]');
+        var allChecked = true;
+        requiredCheckboxes.forEach(function(cb) {
+            if (!cb.checked) {
+                allChecked = false;
+            }
+        });
+
+        // Enable/disable the primary button
+        var primaryBtn = document.querySelector('.btn-primary[data-button]');
+        if (primaryBtn) {
+            if (allChecked) {
+                primaryBtn.classList.remove('btn-disabled');
+                primaryBtn.disabled = false;
+            } else {
+                primaryBtn.classList.add('btn-disabled');
+                primaryBtn.disabled = true;
+            }
+        }
+    };
+
     // Change language (for welcome page language selector)
     // Backend re-renders the page in the new language, so frontend only notifies backend.
     window.changeLanguage = function(lang) {
@@ -405,6 +432,10 @@
         }
         // Initialize language selector if present (needs i18n for language names)
         initLanguageSelector();
+        // Initialize summary checkboxes if present (disables Install button until checked)
+        if (window._summaryHasRequiredCheckboxes) {
+            window.updateSummaryCheckboxes();
+        }
         // Set up focus
         initFocus();
         // Notify Go that page is ready
