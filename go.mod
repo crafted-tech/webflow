@@ -3,7 +3,7 @@ module github.com/crafted-tech/webflow
 go 1.24.0
 
 require (
-	github.com/crafted-tech/webframe v0.3.0-rc.3
+	github.com/crafted-tech/webframe v0.3.0-rc.4
 	github.com/go-ole/go-ole v1.3.0
 	golang.org/x/sys v0.40.0
 )
