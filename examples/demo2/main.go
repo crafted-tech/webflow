@@ -302,7 +302,7 @@ func demoForms(f *webflow.Flow) {
 			},
 			{
 				ID:      "path",
-				Type:    webflow.FieldPath,
+				Type:    webflow.FieldFolder,
 				Label:   "Installation Path",
 				Default: "",
 			},
@@ -621,7 +621,7 @@ func demoDialogs(f *webflow.Flow) {
 				{Title: "ShowError", Description: "Simple error message display", Icon: "error"},
 				{Title: "ShowErrorDetails", Description: "Error with expandable details", Icon: "warning"},
 				{Title: "ShowTextInput", Description: "Single text input dialog", Icon: "file"},
-				{Title: "ShowFileSavePicker", Description: "Native file save dialog", Icon: "folder"},
+				{Title: "SaveFile", Description: "Native file save dialog", Icon: "folder"},
 				{Title: "ShowReview", Description: "Text viewer with Copy/Save buttons", Icon: "info"},
 			}, webflow.WithButtonBar(webflow.ButtonBar{
 				Back:  webflow.NewButton("Back", webflow.ButtonBack),
@@ -667,11 +667,13 @@ func demoDialogs(f *webflow.Flow) {
 			current = stepMenu
 
 		case stepFileSave:
-			path, ok := f.ShowFileSavePicker(
-				"Save File",
-				"example.txt",
-				webflow.FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
-				webflow.FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
+			path, ok := f.SaveFile(
+				webflow.DialogTitle("Save File"),
+				webflow.DialogDefaultName("example.txt"),
+				webflow.DialogFilters(
+					webflow.FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
+					webflow.FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
+				),
 			)
 			if ok && path != "" {
 				f.ShowMessage("File Selected", fmt.Sprintf("You selected: %s", path), webflow.WithIcon("success"))

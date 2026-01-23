@@ -162,6 +162,8 @@ func renderContent(content any) (string, bool) {
 		return renderConfirmCheckboxView(c), false
 	case SummaryConfig:
 		return renderSummaryView(c), false
+	case AlertConfig:
+		return renderAlertView(c), false
 	default:
 		return "", false
 	}
@@ -193,14 +195,14 @@ func renderChoiceList(choices []Choice) string {
 		buf.WriteString(fmt.Sprintf(`                <label class="choice-item" for="%s">
                     <input type="radio" id="%s" name="choice" value="%s" data-index="%d"%s%s>
                     <span class="choice-radio"></span>
-                    <span class="choice-content">
-                        <span class="choice-label">%s</span>
+                    <div class="choice-content">
+                        <div class="choice-label">%s</div>
 `, inputID, inputID, html.EscapeString(value), i, checked, autofocus, html.EscapeString(choice.Label)))
 		if choice.Description != "" {
-			buf.WriteString(fmt.Sprintf(`                        <span class="choice-description">%s</span>
+			buf.WriteString(fmt.Sprintf(`                        <div class="choice-description">%s</div>
 `, html.EscapeString(choice.Description)))
 		}
-		buf.WriteString(`                    </span>
+		buf.WriteString(`                    </div>
                 </label>
 `)
 	}
@@ -237,14 +239,14 @@ func renderMultiChoiceList(mc MultiChoice) string {
 		buf.WriteString(fmt.Sprintf(`                <label class="choice-item" for="%s">
                     <input type="checkbox" id="%s" name="choice-%d" value="%s" data-index="%d"%s%s>
                     <span class="choice-checkbox"></span>
-                    <span class="choice-content">
-                        <span class="choice-label">%s</span>
+                    <div class="choice-content">
+                        <div class="choice-label">%s</div>
 `, inputID, inputID, i, html.EscapeString(value), i, checked, autofocus, html.EscapeString(choice.Label)))
 		if choice.Description != "" {
-			buf.WriteString(fmt.Sprintf(`                        <span class="choice-description">%s</span>
+			buf.WriteString(fmt.Sprintf(`                        <div class="choice-description">%s</div>
 `, html.EscapeString(choice.Description)))
 		}
-		buf.WriteString(`                    </span>
+		buf.WriteString(`                    </div>
                 </label>
 `)
 	}
@@ -327,7 +329,7 @@ func renderFormField(field FormField) string {
 	var buf bytes.Buffer
 
 	switch field.Type {
-	case FieldText, FieldPassword, FieldPath:
+	case FieldText, FieldPassword:
 		inputType := "text"
 		if field.Type == FieldPassword {
 			inputType = "password"
@@ -336,11 +338,6 @@ func renderFormField(field FormField) string {
 		buf.WriteString(fmt.Sprintf(`                <div class="form-group">
                     <label class="form-label" for="%s">%s</label>
 `, html.EscapeString(field.ID), html.EscapeString(field.Label)))
-
-		if field.Type == FieldPath {
-			buf.WriteString(`                    <div class="form-path-group">
-`)
-		}
 
 		defaultVal := ""
 		if field.Default != nil {
@@ -360,14 +357,40 @@ func renderFormField(field FormField) string {
 		buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="form-input" value="%s"%s%s>
 `, inputType, html.EscapeString(field.ID), html.EscapeString(defaultVal), placeholder, required))
 
-		if field.Type == FieldPath {
-			buf.WriteString(fmt.Sprintf(`                        <button type="button" class="btn btn-default" onclick="window.browseFolder('%s')">Browse</button>
-                    </div>
-`, html.EscapeString(field.ID)))
-		}
-
 		buf.WriteString(`                </div>
 `)
+
+	case FieldFile, FieldFolder:
+		mode := "file"
+		if field.Type == FieldFolder {
+			mode = "folder"
+		}
+
+		buf.WriteString(fmt.Sprintf(`                <div class="form-group">
+                    <label class="form-label" for="%s">%s</label>
+                    <div class="form-path-group">
+`, html.EscapeString(field.ID), html.EscapeString(field.Label)))
+
+		defaultVal := ""
+		if field.Default != nil {
+			defaultVal = fmt.Sprintf("%v", field.Default)
+		}
+
+		required := ""
+		if field.Required {
+			required = " required"
+		}
+
+		placeholder := ""
+		if field.Placeholder != "" {
+			placeholder = fmt.Sprintf(` placeholder="%s"`, html.EscapeString(field.Placeholder))
+		}
+
+		buf.WriteString(fmt.Sprintf(`                        <input type="text" id="%s" class="form-input" value="%s"%s%s>
+                        <button type="button" class="btn btn-default" onclick="window.browsePath('%s', '%s')">Browse</button>
+                    </div>
+                </div>
+`, html.EscapeString(field.ID), html.EscapeString(defaultVal), placeholder, required, html.EscapeString(field.ID), mode))
 
 	case FieldTextArea:
 		defaultVal := ""
@@ -715,6 +738,38 @@ func renderSummaryView(cfg SummaryConfig) string {
 		}
 	}
 
+	return buf.String()
+}
+
+// renderAlertView renders an alert dialog with icon inline with title.
+func renderAlertView(cfg AlertConfig) string {
+	var buf bytes.Buffer
+
+	alertType := cfg.Type
+	if alertType == "" {
+		alertType = AlertInfo // Default to info
+	}
+
+	icon := GetIcon(string(alertType))
+
+	// Alert header with inline icon and title
+	buf.WriteString(fmt.Sprintf(`            <div class="alert-dialog alert-dialog-%s">
+                <div class="alert-dialog-header">
+                    <span class="alert-dialog-icon">%s</span>
+                    <span class="alert-dialog-title">%s</span>
+                </div>
+`, alertType, icon, html.EscapeString(cfg.Title)))
+
+	// Message
+	if cfg.Message != "" {
+		escapedMsg := html.EscapeString(cfg.Message)
+		formattedMsg := strings.ReplaceAll(escapedMsg, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`                <div class="alert-dialog-message">%s</div>
+`, formattedMsg))
+	}
+
+	buf.WriteString(`            </div>
+`)
 	return buf.String()
 }
 

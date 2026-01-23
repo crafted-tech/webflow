@@ -76,7 +76,7 @@ func New(opts ...Option) (*Flow, error) {
 	}
 
 	// Create webview
-	resizable := cfg.Resizable == nil || *cfg.Resizable // nil or true = resizable
+	resizable := cfg.Resizable == nil || *cfg.Resizable                // nil or true = resizable
 	nativeTitleBar := cfg.NativeTitleBar != nil && *cfg.NativeTitleBar // nil or false = stylable titlebar
 	wvConfig := types.Config{
 		Title:          cfg.Title,
@@ -162,19 +162,9 @@ func New(opts ...Option) (*Flow, error) {
 			return
 		}
 
-		if resp.Type == "browse_folder" {
-			debugLog("browse_folder message received")
-			debugLog(fmt.Sprintf("f.wv type: %T", f.wv))
-			// Check if webview supports folder browsing before calling handler
-			browser, ok := f.wv.(folderBrowser)
-			debugLog(fmt.Sprintf("folderBrowser assertion: ok=%v, browser=%v", ok, browser != nil))
-			if !ok {
-				debugLog("folderBrowser interface NOT supported")
-				return
-			}
-			debugLog("calling handleBrowseFolder")
-			f.handleBrowseFolder(resp)
-			debugLog("handleBrowseFolder returned")
+		if resp.Type == "browse_path" {
+			debugLog("browse_path message received")
+			f.handleBrowsePath(resp)
 			return
 		}
 
@@ -337,7 +327,7 @@ func (f *Flow) ShowPage(page Page) any {
 		}
 		return Close
 	case ButtonNext:
-		if msg.Data != nil && len(msg.Data) > 0 {
+		if len(msg.Data) > 0 {
 			return msg.Data
 		}
 		return nil
@@ -524,9 +514,56 @@ func (f *Flow) ShowConfirm(title, message string) any {
 	}
 }
 
+// ShowAlert displays an alert dialog with icon inline with title.
+// The alert type determines the color scheme and icon (info, warning, error, success).
+func (f *Flow) ShowAlert(alertType AlertType, title, message string, opts ...PageOption) {
+	cfg := AlertConfig{
+		Type:    alertType,
+		Title:   title,
+		Message: message,
+	}
+
+	// Apply default ButtonBar if none provided
+	hasButtonBar := false
+	for _, opt := range opts {
+		pcfg := PageConfig{}
+		opt(&pcfg)
+		if pcfg.ButtonBar != nil {
+			hasButtonBar = true
+			break
+		}
+	}
+	if !hasButtonBar {
+		opts = append(opts, WithButtonBar(SimpleOK()))
+	}
+
+	f.ShowMessage("", cfg, opts...)
+}
+
+// ShowAlertInfo displays an info alert (blue).
+func (f *Flow) ShowAlertInfo(title, message string) {
+	f.ShowAlert(AlertInfo, title, message)
+}
+
+// ShowAlertWarning displays a warning alert (yellow/amber).
+func (f *Flow) ShowAlertWarning(title, message string) {
+	f.ShowAlert(AlertWarning, title, message)
+}
+
+// ShowAlertError displays an error alert (red).
+func (f *Flow) ShowAlertError(title, message string) {
+	f.ShowAlert(AlertError, title, message)
+}
+
+// ShowAlertSuccess displays a success alert (green).
+func (f *Flow) ShowAlertSuccess(title, message string) {
+	f.ShowAlert(AlertSuccess, title, message)
+}
+
 // ShowError displays an error message with an OK button and error icon.
+// Deprecated: Use ShowAlertError instead for consistent styling.
 func (f *Flow) ShowError(title, message string) {
-	f.ShowMessage(title, message, WithIcon("error"), WithButtonBar(SimpleOK()))
+	f.ShowAlertError(title, message)
 }
 
 // ShowErrorDetails displays an error message with OK and optional Details buttons.
@@ -547,9 +584,7 @@ func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy fu
 	}
 
 	page := Page{
-		Title:     title,
-		Content:   message,
-		Icon:      "error",
+		Content:   AlertConfig{Type: AlertError, Title: title, Message: message},
 		ButtonBar: buttonBar,
 	}
 
@@ -717,18 +752,40 @@ func (f *Flow) ShowConfirmWithCheckbox(cfg ConfirmCheckboxConfig, opts ...PageOp
 	}
 }
 
-// ShowFileSavePicker shows a native file save dialog and returns the selected path.
+// OpenFile shows a native file open dialog for selecting a single file.
 // Returns the path and true if a file was selected, empty string and false if cancelled.
-func (f *Flow) ShowFileSavePicker(title, defaultName string, filters ...FileFilter) (string, bool) {
-	// Convert FileFilter to types.FileFilter
-	typeFilters := make([]types.FileFilter, len(filters))
-	for i, filter := range filters {
-		typeFilters[i] = types.FileFilter{
-			Name:     filter.Name,
-			Patterns: filter.Patterns,
-		}
+func (f *Flow) OpenFile(opts ...DialogOption) (string, bool) {
+	if d, ok := f.wv.(types.Dialogs); ok {
+		return d.OpenFile(opts...)
 	}
-	return saveFile(f.wv, title, defaultName, typeFilters...)
+	return "", false
+}
+
+// OpenFiles shows a native file open dialog for selecting multiple files.
+// Returns the paths and true if files were selected, nil and false if cancelled.
+func (f *Flow) OpenFiles(opts ...DialogOption) ([]string, bool) {
+	if d, ok := f.wv.(types.Dialogs); ok {
+		return d.OpenFiles(opts...)
+	}
+	return nil, false
+}
+
+// SaveFile shows a native file save dialog.
+// Returns the path and true if a location was selected, empty string and false if cancelled.
+func (f *Flow) SaveFile(opts ...DialogOption) (string, bool) {
+	if d, ok := f.wv.(types.Dialogs); ok {
+		return d.SaveFile(opts...)
+	}
+	return "", false
+}
+
+// PickFolder shows a native folder selection dialog.
+// Returns the path and true if a folder was selected, empty string and false if cancelled.
+func (f *Flow) PickFolder(opts ...DialogOption) (string, bool) {
+	if d, ok := f.wv.(types.Dialogs); ok {
+		return d.PickFolder(opts...)
+	}
+	return "", false
 }
 
 // ShowTextInput displays a single text input dialog.
@@ -1262,10 +1319,14 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 				}
 				continue // Stay in dialog, wait for more messages
 			case "review_save":
-				// Show native save file dialog using saveFile helper (supports both new and legacy interfaces)
-				path, ok := saveFile(f.wv, "Save As", "log.txt",
-					types.FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
-					types.FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
+				// Show native save file dialog
+				path, ok := f.SaveFile(
+					DialogTitle("Save As"),
+					DialogDefaultName("log.txt"),
+					DialogFilters(
+						FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
+						FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
+					),
 				)
 				if ok && path != "" {
 					// Write the content to the file
@@ -1423,84 +1484,57 @@ type webviewFocuser interface {
 	FocusWebView()
 }
 
-// folderBrowser is an optional interface for native folder selection dialogs.
-// Deprecated: Use types.Dialogs interface instead.
-type folderBrowser interface {
-	BrowseFolder(title string) string
-}
-
-// fileSaver is an optional interface for native file save dialogs.
-// Deprecated: Use types.Dialogs interface instead.
-type fileSaver interface {
-	SaveFile(title, defaultName, filter string) string
-}
-
-// pickFolder uses the new Dialogs interface if available, otherwise falls back to legacy folderBrowser.
-func pickFolder(wv types.WebFrame, title string) (string, bool) {
-	// Try the new Dialogs interface first
-	if d, ok := wv.(types.Dialogs); ok {
-		return d.PickFolder(types.WithTitle(title))
-	}
-	// Fall back to legacy interface
-	if b, ok := wv.(folderBrowser); ok {
-		path := b.BrowseFolder(title)
-		return path, path != ""
-	}
-	return "", false
-}
-
-// saveFile uses the new Dialogs interface if available, otherwise falls back to legacy fileSaver.
-func saveFile(wv types.WebFrame, title, defaultName string, filters ...types.FileFilter) (string, bool) {
-	// Try the new Dialogs interface first
-	if d, ok := wv.(types.Dialogs); ok {
-		return d.SaveFile(
-			types.WithTitle(title),
-			types.WithDefaultName(defaultName),
-			types.WithFilters(filters...),
-		)
-	}
-	// Fall back to legacy interface
-	if s, ok := wv.(fileSaver); ok {
-		// Convert filters to legacy format (simplified)
-		filter := ""
-		path := s.SaveFile(title, defaultName, filter)
-		return path, path != ""
-	}
-	return "", false
-}
-
-// handleBrowseFolder handles a browse_folder message from JavaScript.
-// It shows a native folder selection dialog and updates the input field with the result.
-func (f *Flow) handleBrowseFolder(resp messageResponse) {
-	debugLog(fmt.Sprintf("handleBrowseFolder: resp.Data=%v", resp.Data))
+// handleBrowsePath handles a browse_path message from JavaScript.
+// It shows a native file or folder selection dialog and updates the input field with the result.
+func (f *Flow) handleBrowsePath(resp messageResponse) {
+	debugLog(fmt.Sprintf("handleBrowsePath: resp.Data=%v", resp.Data))
 
 	// Get the target input ID from the message data
 	targetID, _ := resp.Data["target"].(string)
-	debugLog(fmt.Sprintf("handleBrowseFolder: targetID=%q", targetID))
 	if targetID == "" {
-		debugLog("handleBrowseFolder: targetID is empty, returning")
+		debugLog("handleBrowsePath: targetID is empty, returning")
 		return
 	}
 
+	// Get browse mode (file or folder)
+	mode, _ := resp.Data["mode"].(string)
+	if mode == "" {
+		mode = "folder" // Default to folder for backward compatibility
+	}
+
 	// Get optional title
-	title := "Select Folder"
+	title := "Select"
+	if mode == "folder" {
+		title = "Select Folder"
+	} else {
+		title = "Select File"
+	}
 	if t, ok := resp.Data["title"].(string); ok && t != "" {
 		title = t
 	}
-	debugLog(fmt.Sprintf("handleBrowseFolder: title=%q", title))
 
-	// Show the folder dialog using pickFolder helper (supports both new and legacy interfaces)
-	debugLog("handleBrowseFolder: calling pickFolder")
-	path, ok := pickFolder(f.wv, title)
-	debugLog(fmt.Sprintf("handleBrowseFolder: pickFolder returned path=%q, ok=%v", path, ok))
+	// Check if dialogs are supported
+	d, ok := f.wv.(types.Dialogs)
+	if !ok {
+		debugLog("handleBrowsePath: dialogs not supported")
+		return
+	}
+
+	// Show the appropriate dialog
+	var path string
+	if mode == "folder" {
+		path, ok = d.PickFolder(types.WithTitle(title))
+	} else {
+		path, ok = d.OpenFile(types.WithTitle(title))
+	}
+
 	if !ok || path == "" {
-		debugLog("handleBrowseFolder: path is empty (cancelled or not supported)")
-		return // User cancelled or not supported
+		debugLog("handleBrowsePath: path is empty (cancelled)")
+		return
 	}
 
 	// Update the input field with the selected path
 	script := `document.getElementById(` + jsonString(targetID) + `).value = ` + jsonString(path) + `;`
-	debugLog(fmt.Sprintf("handleBrowseFolder: executing script: %s", script))
 
 	// Use async script execution if available
 	if async, ok := f.wv.(asyncScriptEvaluator); ok {

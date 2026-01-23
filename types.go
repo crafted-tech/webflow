@@ -2,6 +2,8 @@
 // (installers, setup assistants, configuration tools, onboarding flows) using HTML rendering.
 package webflow
 
+import "github.com/crafted-tech/webframe/types"
+
 // Navigation represents a navigation action (back, close, cancel, or custom button).
 // When a Show* method returns a Navigation value, it means the user clicked a
 // navigation button rather than proceeding with data.
@@ -62,7 +64,8 @@ const (
 	FieldPassword
 	FieldCheckbox
 	FieldSelect
-	FieldPath
+	FieldFile     // Browse for file
+	FieldFolder   // Browse for folder
 	FieldTextArea
 )
 
@@ -417,16 +420,23 @@ type ConfirmCheckboxConfig struct {
 	WarningMessage string // Optional warning message (shown in yellow/orange)
 }
 
-// AlertType defines the type of inline alert for summary items.
+// AlertType defines the type of alert (used for both inline alerts and alert dialogs).
 type AlertType string
 
 const (
-	AlertNone    AlertType = ""        // Default: render as key-value
+	AlertNone    AlertType = ""        // Default: render as key-value (for summary items)
 	AlertInfo    AlertType = "info"    // Blue info box
 	AlertWarning AlertType = "warning" // Yellow/amber warning box
 	AlertError   AlertType = "error"   // Red error box
 	AlertSuccess AlertType = "success" // Green success box
 )
+
+// AlertConfig configures an alert dialog with icon inline with title.
+type AlertConfig struct {
+	Type    AlertType // Alert type (determines color and icon)
+	Title   string    // Alert title (shown inline with icon)
+	Message string    // Alert message (shown below title)
+}
 
 // SummaryItem represents a single key-value pair in a summary display.
 // Used for "Ready to Install" pages where labels need translation but values are literal.
@@ -454,11 +464,22 @@ type SummaryConfig struct {
 	Checkboxes []SummaryCheckbox // Optional acknowledgment checkboxes
 }
 
-// FileFilter defines a filter for file dialogs.
-type FileFilter struct {
-	Name     string   // Display name (e.g., "Text Files")
-	Patterns []string // File patterns (e.g., []string{"*.txt", "*.log"})
-}
+// Dialog types re-exported from webframe/types for convenience.
+// These are used with OpenFile, OpenFiles, SaveFile, and PickFolder methods.
+type (
+	FileFilter   = types.FileFilter
+	DialogOption = types.DialogOption
+)
+
+// Dialog option functions re-exported from webframe/types.
+var (
+	DialogTitle       = types.WithTitle       // Set dialog title
+	DialogDefaultDir  = types.WithDefaultDir  // Set starting directory
+	DialogDefaultName = types.WithDefaultName // Set default filename (SaveFile only)
+	DialogFilters     = types.WithFilters     // Set file type filters
+	DialogFilterIndex = types.WithFilterIndex // Set default filter index (0-based)
+	Filter            = types.Filter          // Create a FileFilter: Filter("Images", "*.png", "*.jpg")
+)
 
 // Built-in button IDs
 const (

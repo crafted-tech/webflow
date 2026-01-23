@@ -517,6 +517,7 @@ body.using-keyboard .choice-item:has(input:focus) {
 
 .choice-content {
     flex: 1;
+    min-width: 0;
 }
 
 .choice-label {
@@ -1006,3 +1007,101 @@ body.using-keyboard .menu-item:focus {
     border-color: hsl(142 71% 45% / 0.3);
     color: hsl(142 71% 55%);
 }
+
+/* Alert Dialog (full-page alert with inline icon + title) */
+.alert-dialog {
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin: 0.5rem 0;
+}
+
+.alert-dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.alert-dialog-icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+}
+
+.alert-dialog-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.alert-dialog-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.alert-dialog-message {
+    line-height: 1.6;
+    margin-left: 2.75rem; /* Align with title (icon width + gap) */
+}
+
+/* Alert Dialog Info variant (blue) */
+.alert-dialog-info {
+    background-color: hsl(217 91% 60% / 0.1);
+    border: 1px solid hsl(217 91% 60% / 0.3);
+}
+.alert-dialog-info .alert-dialog-icon { color: hsl(217 91% 45%); }
+.alert-dialog-info .alert-dialog-title { color: hsl(217 91% 30%); }
+.alert-dialog-info .alert-dialog-message { color: hsl(217 50% 30%); }
+
+[data-theme="dark"] .alert-dialog-info {
+    background-color: hsl(217 91% 60% / 0.08);
+    border-color: hsl(217 91% 60% / 0.25);
+}
+[data-theme="dark"] .alert-dialog-info .alert-dialog-title { color: hsl(217 91% 75%); }
+[data-theme="dark"] .alert-dialog-info .alert-dialog-message { color: hsl(217 50% 70%); }
+
+/* Alert Dialog Warning variant (yellow/amber) */
+.alert-dialog-warning {
+    background-color: hsl(38 92% 50% / 0.1);
+    border: 1px solid hsl(38 92% 50% / 0.3);
+}
+.alert-dialog-warning .alert-dialog-icon { color: hsl(38 92% 40%); }
+.alert-dialog-warning .alert-dialog-title { color: hsl(38 92% 28%); }
+.alert-dialog-warning .alert-dialog-message { color: hsl(38 50% 25%); }
+
+[data-theme="dark"] .alert-dialog-warning {
+    background-color: hsl(38 92% 50% / 0.08);
+    border-color: hsl(38 92% 50% / 0.25);
+}
+[data-theme="dark"] .alert-dialog-warning .alert-dialog-title { color: hsl(38 92% 65%); }
+[data-theme="dark"] .alert-dialog-warning .alert-dialog-message { color: hsl(38 50% 65%); }
+
+/* Alert Dialog Error variant (red) */
+.alert-dialog-error {
+    background-color: hsl(var(--destructive) / 0.1);
+    border: 1px solid hsl(var(--destructive) / 0.3);
+}
+.alert-dialog-error .alert-dialog-icon { color: hsl(var(--destructive)); }
+.alert-dialog-error .alert-dialog-title { color: hsl(var(--destructive)); }
+.alert-dialog-error .alert-dialog-message { color: hsl(var(--foreground)); }
+
+[data-theme="dark"] .alert-dialog-error {
+    background-color: hsl(var(--destructive) / 0.08);
+    border-color: hsl(var(--destructive) / 0.25);
+}
+
+/* Alert Dialog Success variant (green) */
+.alert-dialog-success {
+    background-color: hsl(142 71% 45% / 0.1);
+    border: 1px solid hsl(142 71% 45% / 0.3);
+}
+.alert-dialog-success .alert-dialog-icon { color: hsl(142 71% 38%); }
+.alert-dialog-success .alert-dialog-title { color: hsl(142 71% 25%); }
+.alert-dialog-success .alert-dialog-message { color: hsl(142 40% 25%); }
+
+[data-theme="dark"] .alert-dialog-success {
+    background-color: hsl(142 71% 45% / 0.08);
+    border-color: hsl(142 71% 45% / 0.25);
+}
+[data-theme="dark"] .alert-dialog-success .alert-dialog-title { color: hsl(142 71% 60%); }
+[data-theme="dark"] .alert-dialog-success .alert-dialog-message { color: hsl(142 40% 60%); }

@@ -309,12 +309,14 @@
         });
     };
 
-    // Browse for folder (called from Browse button onclick)
-    window.browseFolder = function(targetInputId, title) {
-        sendMessage('browse_folder', {
+    // Browse for file or folder (called from Browse button onclick)
+    // mode: 'file' or 'folder'
+    window.browsePath = function(targetInputId, mode, title) {
+        sendMessage('browse_path', {
             data: {
                 target: targetInputId,
-                title: title || 'Select Folder'
+                mode: mode || 'folder',
+                title: title || (mode === 'file' ? 'Select File' : 'Select Folder')
             }
         });
     };

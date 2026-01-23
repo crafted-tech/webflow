@@ -207,7 +207,7 @@ func main() {
 				[]webflow.FormField{
 					{
 						ID:      "install_path",
-						Type:    webflow.FieldPath,
+						Type:    webflow.FieldFolder,
 						Label:   T("directory.label"),
 						Default: installPath,
 					},
