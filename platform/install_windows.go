@@ -110,12 +110,130 @@ func UnregisterApp(registryKey string) error {
 	return nil
 }
 
+// RegisterUserApp creates a per-user uninstall registry entry (HKCU).
+// No admin elevation required. Use this for per-user installations.
+func RegisterUserApp(registryKey string, info AppInfo) error {
+	keyPath := uninstallKeyBase + registryKey
+	key, _, err := registry.CreateKey(
+		registry.CURRENT_USER,
+		keyPath,
+		registry.SET_VALUE,
+	)
+	if err != nil {
+		return fmt.Errorf("create registry key: %w", err)
+	}
+	defer key.Close()
+
+	// Required string values
+	stringValues := map[string]string{
+		"DisplayName":     info.DisplayName,
+		"DisplayVersion":  info.DisplayVersion,
+		"Publisher":       info.Publisher,
+		"InstallLocation": info.InstallLocation,
+		"UninstallString": info.UninstallString,
+	}
+
+	// Optional string values
+	if info.DisplayIcon != "" {
+		stringValues["DisplayIcon"] = info.DisplayIcon
+	} else if info.UninstallString != "" {
+		// Default to uninstaller icon
+		stringValues["DisplayIcon"] = info.UninstallString
+	}
+	if info.URLInfoAbout != "" {
+		stringValues["URLInfoAbout"] = info.URLInfoAbout
+	}
+	if info.URLUpdateInfo != "" {
+		stringValues["URLUpdateInfo"] = info.URLUpdateInfo
+	}
+	if info.HelpLink != "" {
+		stringValues["HelpLink"] = info.HelpLink
+	}
+	if info.InstallDate != "" {
+		stringValues["InstallDate"] = info.InstallDate
+	}
+
+	for name, value := range stringValues {
+		if err := key.SetStringValue(name, value); err != nil {
+			return fmt.Errorf("set %s: %w", name, err)
+		}
+	}
+
+	// DWORD values
+	if info.NoModify {
+		if err := key.SetDWordValue("NoModify", 1); err != nil {
+			return fmt.Errorf("set NoModify: %w", err)
+		}
+	}
+	if info.NoRepair {
+		if err := key.SetDWordValue("NoRepair", 1); err != nil {
+			return fmt.Errorf("set NoRepair: %w", err)
+		}
+	}
+	if info.EstimatedSize > 0 {
+		if err := key.SetDWordValue("EstimatedSize", info.EstimatedSize); err != nil {
+			return fmt.Errorf("set EstimatedSize: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// UnregisterUserApp removes the per-user uninstall registry entry.
+func UnregisterUserApp(registryKey string) error {
+	keyPath := uninstallKeyBase + registryKey
+	err := registry.DeleteKey(registry.CURRENT_USER, keyPath)
+	if err != nil && err != registry.ErrNotExist {
+		return fmt.Errorf("delete registry key: %w", err)
+	}
+	return nil
+}
+
 // FindInstalledApp looks up an existing installation by registry key.
 // Returns nil if the app is not installed.
 func FindInstalledApp(registryKey string) (*AppInfo, error) {
 	keyPath := uninstallKeyBase + registryKey
 	key, err := registry.OpenKey(
 		registry.LOCAL_MACHINE,
+		keyPath,
+		registry.QUERY_VALUE,
+	)
+	if err != nil {
+		// Key doesn't exist - not installed
+		return nil, nil
+	}
+	defer key.Close()
+
+	info := &AppInfo{}
+
+	if v, _, err := key.GetStringValue("DisplayName"); err == nil {
+		info.DisplayName = v
+	}
+	if v, _, err := key.GetStringValue("DisplayVersion"); err == nil {
+		info.DisplayVersion = v
+	}
+	if v, _, err := key.GetStringValue("Publisher"); err == nil {
+		info.Publisher = v
+	}
+	if v, _, err := key.GetStringValue("InstallLocation"); err == nil {
+		info.InstallLocation = v
+	}
+	if v, _, err := key.GetStringValue("UninstallString"); err == nil {
+		info.UninstallString = v
+	}
+	if v, _, err := key.GetStringValue("DisplayIcon"); err == nil {
+		info.DisplayIcon = v
+	}
+
+	return info, nil
+}
+
+// FindInstalledUserApp looks up a per-user installation by registry key.
+// Returns nil if the app is not installed for the current user.
+func FindInstalledUserApp(registryKey string) (*AppInfo, error) {
+	keyPath := uninstallKeyBase + registryKey
+	key, err := registry.OpenKey(
+		registry.CURRENT_USER,
 		keyPath,
 		registry.QUERY_VALUE,
 	)

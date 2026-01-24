@@ -56,6 +56,18 @@ func Language(resp any) string {
 	return ""
 }
 
+// IsCheckboxChecked returns true if the checkbox with the given ID is checked
+// in the response data. This is used to read optional checkbox values from
+// summary pages or form responses.
+func IsCheckboxChecked(resp any, id string) bool {
+	if data, ok := resp.(map[string]any); ok {
+		if checked, ok := data[id].(bool); ok {
+			return checked
+		}
+	}
+	return false
+}
+
 // FieldType represents the type of a form field.
 type FieldType int
 
@@ -454,6 +466,7 @@ type SummaryCheckbox struct {
 	Label    string // Checkbox label text
 	Required bool   // If true, Install button disabled until checked
 	Warning  string // Optional warning text shown above checkbox (yellow box)
+	Checked  bool   // Initial checked state (default: false)
 }
 
 // SummaryConfig configures a summary/review display with labeled key-value pairs.

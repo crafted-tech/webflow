@@ -352,7 +352,8 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 // Default is SimpleOK() if no ButtonBar is provided.
 //
 // Returns:
-//   - nil if user clicked Next/OK
+//   - nil if user clicked Next/OK (without form data)
+//   - map[string]any if user clicked Next/OK (with form data including checkboxes)
 //   - Navigation (Back/Close/Cancel or custom button ID) for navigation
 func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) any {
 	// Apply default ButtonBar if none provided
@@ -377,10 +378,18 @@ func (f *Flow) ShowMessage(title string, content any, opts ...PageOption) any {
 		return Back
 	case ButtonClose, ButtonCancel, "":
 		if msg.Button == "" && msg.Type != "window_close" {
-			return nil // Next/OK
+			// Next/OK - return data if available
+			if len(msg.Data) > 0 {
+				return msg.Data
+			}
+			return nil
 		}
 		return Close
 	case ButtonNext:
+		// Return data if available (for checkboxes, etc.)
+		if len(msg.Data) > 0 {
+			return msg.Data
+		}
 		return nil
 	default:
 		return Navigation(msg.Button)
