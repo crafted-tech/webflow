@@ -105,36 +105,26 @@ func New(opts ...Option) (*Flow, error) {
 	// Determine dark mode based on theme setting
 	switch {
 	case cfg.Theme == nil, *cfg.Theme == ThemeSystem:
-		// Auto-detect from OS
-		osIsDark := wv.IsDarkMode()
-		f.darkMode = osIsDark
-		fmt.Printf("[webflow] Theme: system (auto-detect), wv.IsDarkMode()=%v, using darkMode=%v\n", osIsDark, f.darkMode)
+		f.darkMode = wv.IsDarkMode()
 	case *cfg.Theme == ThemeDark:
 		f.darkMode = true
-		fmt.Printf("[webflow] Theme: forced dark, using darkMode=%v\n", f.darkMode)
 	case *cfg.Theme == ThemeLight:
 		f.darkMode = false
-		fmt.Printf("[webflow] Theme: forced light, using darkMode=%v\n", f.darkMode)
 	}
 
-	// Set initial frame appearance using system headerbar colors (active and backdrop)
+	// Set initial frame appearance using system headerbar colors
 	frameColor := wv.GetHeaderBarColor()
 	backdropFrameColor := wv.GetBackdropHeaderBarColor()
-	fmt.Printf("[webflow] Setting frame appearance to system colors (active=#%02x%02x%02x, backdrop=#%02x%02x%02x)\n",
-		frameColor.R, frameColor.G, frameColor.B, backdropFrameColor.R, backdropFrameColor.G, backdropFrameColor.B)
 	wv.SetFrameAppearance(types.FrameAppearance{TitleBar: frameColor, BackdropTitleBar: backdropFrameColor})
 
 	// Register for OS theme changes (only when using system theme)
 	if cfg.Theme == nil || *cfg.Theme == ThemeSystem {
 		wv.OnThemeChange(func(isDark bool) {
-			fmt.Printf("[webflow] OS theme changed: isDark=%v\n", isDark)
 			f.darkMode = isDark
 
-			// Update window frame decorations using system colors (active and backdrop)
+			// Update window frame decorations using system colors
 			newFrameColor := f.wv.GetHeaderBarColor()
 			newBackdropFrameColor := f.wv.GetBackdropHeaderBarColor()
-			fmt.Printf("[webflow] Updating frame to system colors (active=#%02x%02x%02x, backdrop=#%02x%02x%02x)\n",
-				newFrameColor.R, newFrameColor.G, newFrameColor.B, newBackdropFrameColor.R, newBackdropFrameColor.G, newBackdropFrameColor.B)
 			f.wv.SetFrameAppearance(types.FrameAppearance{TitleBar: newFrameColor, BackdropTitleBar: newBackdropFrameColor})
 
 			// Update CSS class instantly
@@ -170,7 +160,6 @@ func New(opts ...Option) (*Flow, error) {
 
 		if resp.Type == "toggle_theme" {
 			f.darkMode = !f.darkMode
-			fmt.Printf("[webflow] Theme toggled via Shift+F5, new darkMode=%v\n", f.darkMode)
 
 			// Update CSS class instantly (no re-render needed)
 			// Use EvaluateScriptAsync to avoid deadlock when called from message handler
@@ -202,7 +191,6 @@ func New(opts ...Option) (*Flow, error) {
 				f.language = lang
 				f.mu.Unlock()
 				SetLanguage(lang, f.config.AppTranslations) // Update global state so T()/TF() use new language immediately
-				fmt.Printf("[webflow] Language changed to: %s\n", lang)
 
 				// Send response so ShowPage returns and caller can rebuild page
 				select {
