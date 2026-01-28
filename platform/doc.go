@@ -1,20 +1,25 @@
 // Package platform provides platform-specific utilities for installer and system applications.
 //
-// Currently, this package only supports Windows. Attempting to use it on other
-// platforms will result in a compile-time error.
+// # Platform Support
+//
+// Most features are Windows-only, but service management supports multiple platforms:
+//   - Windows: Service Control Manager (SCM)
+//   - Linux: systemd
+//   - macOS: launchd
 //
 // # Features
 //
 // The package provides the following functionality:
 //
-//   - Clipboard: Copy text to the system clipboard
-//   - Elevation: UAC elevation handling (check/request admin privileges)
-//   - Single Instance: Prevent multiple instances of an application
-//   - App Registration: Register/unregister apps in Add/Remove Programs
-//   - Paths: Get common system paths (Start Menu, Desktop, etc.)
-//   - Process: Find and kill processes by name
-//   - Self-Delete: Schedule executable deletion after exit
-//   - Shortcuts: Create and delete Windows shortcuts (.lnk files)
+//   - Clipboard: Copy text to the system clipboard (Windows)
+//   - Elevation: UAC elevation handling (Windows)
+//   - Single Instance: Prevent multiple instances (Windows)
+//   - App Registration: Register/unregister apps in Add/Remove Programs (Windows)
+//   - Paths: Get common system paths (Windows)
+//   - Process: Find and kill processes by name (Windows)
+//   - Self-Delete: Schedule executable deletion after exit (Windows)
+//   - Shortcuts: Create and delete shortcuts (Windows)
+//   - Service Management: Install/uninstall/start/stop system services (Windows/Linux/macOS)
 //
 // # Example Usage
 //
