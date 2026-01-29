@@ -21,14 +21,16 @@ type AppInfo struct {
 	UninstallString string // Path to uninstaller executable
 
 	// Optional fields
-	DisplayIcon   string // Path to icon (defaults to main exe)
-	URLInfoAbout  string // Product website
-	URLUpdateInfo string // Update URL
-	HelpLink      string // Support URL
-	InstallDate   string // Install date in YYYYMMDD format
-	EstimatedSize uint32 // Size in KB (for display in Add/Remove Programs)
-	NoModify      bool   // Hide "Modify" button
-	NoRepair      bool   // Hide "Repair" button
+	DisplayIcon        string // Path to icon (defaults to main exe)
+	URLInfoAbout       string // Product website
+	URLUpdateInfo      string // Update URL
+	HelpLink           string // Support URL
+	InstallDate        string // Install date in YYYYMMDD format
+	EstimatedSize      uint32 // Size in KB (for display in Add/Remove Programs)
+	NoModify           bool   // Hide "Modify" button
+	NoRepair           bool   // Hide "Repair" button
+	QuietUninstallString string // Silent uninstall command (e.g., "path\uninstall.exe" --silent)
+	Language           uint32 // Windows LCID for installer language (e.g., 1033 for English)
 }
 
 // RegisterApp creates a Windows uninstall registry entry in Add/Remove Programs.
@@ -80,6 +82,13 @@ func RegisterApp(registryKey string, info AppInfo) error {
 		}
 	}
 
+	// Optional: QuietUninstallString
+	if info.QuietUninstallString != "" {
+		if err := key.SetStringValue("QuietUninstallString", info.QuietUninstallString); err != nil {
+			return fmt.Errorf("set QuietUninstallString: %w", err)
+		}
+	}
+
 	// DWORD values
 	if info.NoModify {
 		if err := key.SetDWordValue("NoModify", 1); err != nil {
@@ -94,6 +103,11 @@ func RegisterApp(registryKey string, info AppInfo) error {
 	if info.EstimatedSize > 0 {
 		if err := key.SetDWordValue("EstimatedSize", info.EstimatedSize); err != nil {
 			return fmt.Errorf("set EstimatedSize: %w", err)
+		}
+	}
+	if info.Language > 0 {
+		if err := key.SetDWordValue("Language", info.Language); err != nil {
+			return fmt.Errorf("set Language: %w", err)
 		}
 	}
 
@@ -159,6 +173,13 @@ func RegisterUserApp(registryKey string, info AppInfo) error {
 		}
 	}
 
+	// Optional: QuietUninstallString
+	if info.QuietUninstallString != "" {
+		if err := key.SetStringValue("QuietUninstallString", info.QuietUninstallString); err != nil {
+			return fmt.Errorf("set QuietUninstallString: %w", err)
+		}
+	}
+
 	// DWORD values
 	if info.NoModify {
 		if err := key.SetDWordValue("NoModify", 1); err != nil {
@@ -173,6 +194,11 @@ func RegisterUserApp(registryKey string, info AppInfo) error {
 	if info.EstimatedSize > 0 {
 		if err := key.SetDWordValue("EstimatedSize", info.EstimatedSize); err != nil {
 			return fmt.Errorf("set EstimatedSize: %w", err)
+		}
+	}
+	if info.Language > 0 {
+		if err := key.SetDWordValue("Language", info.Language); err != nil {
+			return fmt.Errorf("set Language: %w", err)
 		}
 	}
 

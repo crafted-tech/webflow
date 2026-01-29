@@ -21,6 +21,7 @@ type Config struct {
 	PrimaryColorLight string                       // HSL values for light mode, e.g., "142 70% 35%"
 	PrimaryColorDark  string                       // HSL values for dark mode, e.g., "142 70% 50%"
 	AppTranslations   map[string]map[string]string // App-specific translations: lang -> key -> value
+	InitialLanguage   string                       // Initial language code (e.g., "en", "de", "ja")
 }
 
 // Option is a function that configures a Flow.
@@ -88,6 +89,15 @@ func WithPrimaryColor(light, dark string) Option {
 	return func(c *Config) {
 		c.PrimaryColorLight = light
 		c.PrimaryColorDark = dark
+	}
+}
+
+// WithInitialLanguage sets the initial UI language.
+// Use this to restore a previously saved language preference (e.g., for uninstallers).
+// If not set, defaults to "en".
+func WithInitialLanguage(lang string) Option {
+	return func(c *Config) {
+		c.InitialLanguage = lang
 	}
 }
 

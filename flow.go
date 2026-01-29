@@ -231,7 +231,12 @@ func New(opts ...Option) (*Flow, error) {
 
 	// Auto-initialize translations if app translations were provided
 	if cfg.AppTranslations != nil {
-		SetLanguage("en", cfg.AppTranslations)
+		lang := cfg.InitialLanguage
+		if lang == "" {
+			lang = "en"
+		}
+		SetLanguage(lang, cfg.AppTranslations)
+		f.language = lang
 	}
 
 	return f, nil
