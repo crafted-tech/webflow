@@ -425,6 +425,28 @@ body.using-keyboard .form-checkbox:focus {
     flex-shrink: 0;
 }
 
+/* Input with inline button (similar to path group) */
+.form-input-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.form-input-group .btn {
+    flex-shrink: 0;
+}
+
+/* Input width variants */
+.form-input-narrow {
+    width: 100px;
+    flex: 0 0 auto;
+}
+
+.form-input-medium {
+    width: 200px;
+    flex: 0 0 auto;
+}
+
 /* Choice list */
 .choice-list {
     display: flex;

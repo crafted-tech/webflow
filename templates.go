@@ -354,8 +354,26 @@ func renderFormField(field FormField) string {
 			placeholder = fmt.Sprintf(` placeholder="%s"`, html.EscapeString(field.Placeholder))
 		}
 
-		buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="form-input" value="%s"%s%s>
-`, inputType, html.EscapeString(field.ID), html.EscapeString(defaultVal), placeholder, required))
+		// Add width class if specified
+		inputClass := "form-input"
+		if field.Width != "" {
+			inputClass += " form-input-" + field.Width
+		}
+
+		// If field has a suffix button, wrap in inline group
+		if field.Suffix != nil {
+			buf.WriteString(`                    <div class="form-input-group">
+`)
+			buf.WriteString(fmt.Sprintf(`                        <input type="%s" id="%s" class="%s" value="%s"%s%s>
+`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required))
+			// Render suffix button
+			buf.WriteString(renderInlineButton(field.Suffix))
+			buf.WriteString(`                    </div>
+`)
+		} else {
+			buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="%s" value="%s"%s%s>
+`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required))
+		}
 
 		buf.WriteString(`                </div>
 `)
@@ -898,4 +916,26 @@ func renderButton(btn *Button) string {
 
 	return fmt.Sprintf(`            <button type="button" class="%s" data-button="%s"%s>%s</button>
 `, btnClass, html.EscapeString(btn.ID), disabled, content)
+}
+
+// renderInlineButton renders a button for use inside form-input-group.
+// Uses the same styling as form-path-group browse buttons.
+func renderInlineButton(btn *Button) string {
+	if btn == nil {
+		return ""
+	}
+
+	btnClass := "btn btn-default"
+	if btn.Style == ButtonPrimary {
+		btnClass = "btn btn-primary"
+	}
+
+	disabled := ""
+	if !btn.Enabled {
+		btnClass += " btn-disabled"
+		disabled = " disabled"
+	}
+
+	return fmt.Sprintf(`                        <button type="button" class="%s" data-button="%s"%s>%s</button>
+`, btnClass, html.EscapeString(btn.ID), disabled, html.EscapeString(btn.Label))
 }

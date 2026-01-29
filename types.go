@@ -252,6 +252,8 @@ type FormField struct {
 	Default     any       // Default value for the field
 	Options     []string  // Options for Select type fields
 	Required    bool      // If true, field must be filled
+	Width       string    // Field width: "narrow", "medium", or "" (full, default)
+	Suffix      *Button   // Optional inline button shown after the field
 }
 
 // Choice represents an option in a choice list.
