@@ -9,3 +9,5 @@ require (
 )
 
 require github.com/adnsv/multimon v0.6.0 // indirect
+
+replace github.com/crafted-tech/webframe => ../webframe

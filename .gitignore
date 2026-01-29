@@ -1,4 +1,7 @@
 *.exe
+# Allow embedded WebView2 bootstrapper
+!installer/assets/MicrosoftEdgeWebview2Setup.exe
+
 .vscode/*
 !.vscode/launch.json
 !.vscode/settings.json
