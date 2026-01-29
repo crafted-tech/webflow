@@ -393,3 +393,24 @@ func LanguageToLCID(code string) uint32 {
 	}
 	return lcidMap[code]
 }
+
+// LCIDToLanguage converts a Windows LCID to a language code.
+// Supports the 12 languages commonly used in installer UIs.
+// Returns empty string if the LCID is not in the mapping.
+func LCIDToLanguage(lcid uint32) string {
+	langMap := map[uint32]string{
+		1031: "de",      // German
+		1033: "en",      // English (US)
+		1034: "es",      // Spanish
+		1036: "fr",      // French
+		1040: "it",      // Italian
+		1041: "ja",      // Japanese
+		1042: "ko",      // Korean
+		1046: "pt",      // Portuguese (Brazil)
+		1049: "ru",      // Russian
+		1054: "th",      // Thai
+		2052: "zh-Hans", // Simplified Chinese
+		1028: "zh-Hant", // Traditional Chinese (Taiwan)
+	}
+	return langMap[lcid]
+}
