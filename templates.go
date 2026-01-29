@@ -354,6 +354,18 @@ func renderFormField(field FormField) string {
 			placeholder = fmt.Sprintf(` placeholder="%s"`, html.EscapeString(field.Placeholder))
 		}
 
+		// Add data-invalidates-form attribute if set
+		invalidates := ""
+		if field.InvalidatesForm {
+			invalidates = ` data-invalidates-form="true"`
+		}
+
+		// Add autofocus attribute if set
+		autofocus := ""
+		if field.Focus {
+			autofocus = " autofocus"
+		}
+
 		// Add width class if specified
 		inputClass := "form-input"
 		if field.Width != "" {
@@ -364,15 +376,15 @@ func renderFormField(field FormField) string {
 		if field.Suffix != nil {
 			buf.WriteString(`                    <div class="form-input-group">
 `)
-			buf.WriteString(fmt.Sprintf(`                        <input type="%s" id="%s" class="%s" value="%s"%s%s>
-`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required))
+			buf.WriteString(fmt.Sprintf(`                        <input type="%s" id="%s" class="%s" value="%s"%s%s%s%s>
+`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required, invalidates, autofocus))
 			// Render suffix button
 			buf.WriteString(renderInlineButton(field.Suffix))
 			buf.WriteString(`                    </div>
 `)
 		} else {
-			buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="%s" value="%s"%s%s>
-`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required))
+			buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="%s" value="%s"%s%s%s%s>
+`, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required, invalidates, autofocus))
 		}
 
 		buf.WriteString(`                </div>
@@ -438,13 +450,19 @@ func renderFormField(field FormField) string {
 			checked = " checked"
 		}
 
-		buf.WriteString(fmt.Sprintf(`                <div class="form-group">
+		// Add hidden class if field should be initially hidden
+		groupClass := "form-group"
+		if field.Hidden {
+			groupClass += " form-field-hidden"
+		}
+
+		buf.WriteString(fmt.Sprintf(`                <div class="%s">
                     <div class="form-checkbox-group">
                         <input type="checkbox" id="%s" class="form-checkbox"%s>
                         <label class="form-label" for="%s">%s</label>
                     </div>
                 </div>
-`, html.EscapeString(field.ID), checked, html.EscapeString(field.ID), html.EscapeString(field.Label)))
+`, groupClass, html.EscapeString(field.ID), checked, html.EscapeString(field.ID), html.EscapeString(field.Label)))
 
 	case FieldSelect:
 		buf.WriteString(fmt.Sprintf(`                <div class="form-group-inline">
@@ -472,6 +490,28 @@ func renderFormField(field FormField) string {
                     </div>
                 </div>
 `)
+
+	case FieldInfo:
+		// FieldInfo renders as an alert/info box (read-only, no input)
+		alertType := field.AlertType
+		if alertType == "" {
+			alertType = AlertInfo // Default to info
+		}
+
+		// Get the message from Label (since there's no input value)
+		message := field.Label
+		if message == "" {
+			break // Nothing to render
+		}
+
+		icon := GetIcon(string(alertType))
+		escapedMsg := html.EscapeString(message)
+		formattedMsg := strings.ReplaceAll(escapedMsg, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`                <div class="summary-alert summary-alert-%s form-field-info">
+                    <span class="summary-alert-icon">%s</span>
+                    <span class="summary-alert-text">%s</span>
+                </div>
+`, alertType, icon, formattedMsg))
 	}
 
 	return buf.String()
@@ -920,6 +960,7 @@ func renderButton(btn *Button) string {
 
 // renderInlineButton renders a button for use inside form-input-group.
 // Uses the same styling as form-path-group browse buttons.
+// Supports icon and icon-only buttons.
 func renderInlineButton(btn *Button) string {
 	if btn == nil {
 		return ""
@@ -930,12 +971,32 @@ func renderInlineButton(btn *Button) string {
 		btnClass = "btn btn-primary"
 	}
 
+	// Icon-only button style
+	if btn.IconOnly {
+		btnClass += " btn-icon"
+	}
+
 	disabled := ""
 	if !btn.Enabled {
 		btnClass += " btn-disabled"
 		disabled = " disabled"
 	}
 
+	// Build button content
+	var content string
+	if btn.Icon != "" {
+		if btn.IconOnly {
+			// Icon only - label becomes title for accessibility
+			content = fmt.Sprintf(`<span class="btn-icon-wrap">%s</span>`, btn.Icon)
+			return fmt.Sprintf(`                        <button type="button" class="%s" data-button="%s" title="%s"%s>%s</button>
+`, btnClass, html.EscapeString(btn.ID), html.EscapeString(btn.Label), disabled, content)
+		}
+		// Icon + label
+		content = fmt.Sprintf(`<span class="btn-icon-wrap">%s</span><span>%s</span>`, btn.Icon, html.EscapeString(btn.Label))
+	} else {
+		content = html.EscapeString(btn.Label)
+	}
+
 	return fmt.Sprintf(`                        <button type="button" class="%s" data-button="%s"%s>%s</button>
-`, btnClass, html.EscapeString(btn.ID), disabled, html.EscapeString(btn.Label))
+`, btnClass, html.EscapeString(btn.ID), disabled, content)
 }

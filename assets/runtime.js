@@ -369,6 +369,72 @@
         sendMessage('change_language', { data: { language: lang } });
     };
 
+    // Handle input changes that invalidate the form
+    // When an input with data-invalidates-form changes:
+    // 1. Hide all .form-field-info elements (alerts)
+    // 2. Show all .form-field-hidden elements (override checkbox)
+    // 3. Disable the Next button (unless override checkbox is checked)
+    document.addEventListener('input', function(e) {
+        if (e.target.hasAttribute('data-invalidates-form')) {
+            // Hide info/alert fields
+            document.querySelectorAll('.form-field-info').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            // Show hidden fields (like override checkbox)
+            document.querySelectorAll('.form-field-hidden').forEach(function(el) {
+                el.classList.remove('form-field-hidden');
+            });
+            // Disable Next button (unless override is checked)
+            updateNextButtonForOverride();
+        }
+    });
+
+    // Clear validation error alerts when typing in any form input
+    // This provides immediate feedback that the user is addressing the error
+    document.addEventListener('input', function(e) {
+        var target = e.target;
+        // Only handle form inputs (text, password, textarea)
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+            // Hide error alerts (red boxes) but keep info/warning/success alerts
+            document.querySelectorAll('.form-field-info.summary-alert-error').forEach(function(el) {
+                el.style.display = 'none';
+            });
+        }
+    });
+
+    // Update Next button state based on override checkbox
+    function updateNextButtonForOverride() {
+        var nextBtn = document.querySelector('.btn-primary[data-button="next"]');
+        if (!nextBtn) return;
+
+        // Check if there's an override checkbox that's checked
+        var overrideCheckbox = document.getElementById('override');
+        if (overrideCheckbox && overrideCheckbox.checked) {
+            nextBtn.classList.remove('btn-disabled');
+            nextBtn.disabled = false;
+        } else {
+            // Check if form-field-info (test result) is visible
+            var infoVisible = false;
+            document.querySelectorAll('.form-field-info').forEach(function(el) {
+                if (el.style.display !== 'none' && el.offsetParent !== null) {
+                    infoVisible = true;
+                }
+            });
+            // If no visible test result, disable button
+            if (!infoVisible) {
+                nextBtn.classList.add('btn-disabled');
+                nextBtn.disabled = true;
+            }
+        }
+    }
+
+    // Handle override checkbox changes
+    document.addEventListener('change', function(e) {
+        if (e.target.id === 'override') {
+            updateNextButtonForOverride();
+        }
+    });
+
     // Focus management on page load
     // If page has focusable content, focus first content element
     // If page has no focusable content, focus the primary/default button

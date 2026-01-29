@@ -487,7 +487,14 @@ func (f *Flow) ShowForm(title string, fields []FormField, opts ...PageOption) an
 		}
 		return msg.Data
 	default:
-		return Navigation(msg.Button)
+		// Custom button (e.g., inline buttons like "test")
+		// Return form data with button ID, so caller can access both
+		data := msg.Data
+		if data == nil {
+			data = make(map[string]any)
+		}
+		data["_button"] = msg.Button
+		return data
 	}
 }
 

@@ -34,11 +34,20 @@ func IsClose(resp any) bool {
 	return ok && (nav == Close || nav == Cancel)
 }
 
-// IsButton returns true if the response is a Navigation action with the given ID.
-// Use this to check for custom button clicks.
+// IsButton returns true if the response is a button click with the given ID.
+// Works for both Navigation type (back/close) and custom buttons (map with _button key).
 func IsButton(resp any, id string) bool {
-	nav, ok := resp.(Navigation)
-	return ok && string(nav) == id
+	// Check Navigation type (standard buttons)
+	if nav, ok := resp.(Navigation); ok {
+		return string(nav) == id
+	}
+	// Check map type with _button key (custom inline buttons)
+	if data, ok := resp.(map[string]any); ok {
+		if btn, ok := data["_button"].(string); ok {
+			return btn == id
+		}
+	}
+	return false
 }
 
 // LanguageChanged returns true if the response indicates a language change.
@@ -79,6 +88,7 @@ const (
 	FieldFile     // Browse for file
 	FieldFolder   // Browse for folder
 	FieldTextArea
+	FieldInfo // Read-only info/alert display (uses AlertType for styling)
 )
 
 // ButtonStyle defines the visual style for a button.
@@ -245,15 +255,19 @@ func ConfirmYesNo() ButtonBar {
 
 // FormField represents a single input field in a form.
 type FormField struct {
-	ID          string    // Unique identifier for the field
-	Type        FieldType // Type of input (Text, Password, Checkbox, etc.)
-	Label       string    // Display label for the field
-	Placeholder string    // Placeholder text for text inputs
-	Default     any       // Default value for the field
-	Options     []string  // Options for Select type fields
-	Required    bool      // If true, field must be filled
-	Width       string    // Field width: "narrow", "medium", or "" (full, default)
-	Suffix      *Button   // Optional inline button shown after the field
+	ID              string    // Unique identifier for the field
+	Type            FieldType // Type of input (Text, Password, Checkbox, etc.)
+	Label           string    // Display label for the field
+	Placeholder     string    // Placeholder text for text inputs
+	Default         any       // Default value for the field
+	Options         []string  // Options for Select type fields
+	Required        bool      // If true, field must be filled
+	Width           string    // Field width: "narrow", "medium", or "" (full, default)
+	Suffix          *Button   // Optional inline button shown after the field
+	AlertType       AlertType // For FieldInfo: determines styling (info, warning, error, success)
+	InvalidatesForm bool      // If true, changing this field hides alerts and disables Next button
+	Hidden          bool      // If true, field is initially hidden (shown when form is invalidated)
+	Focus           bool      // If true, field receives focus when form is displayed
 }
 
 // Choice represents an option in a choice list.
