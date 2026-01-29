@@ -22,7 +22,6 @@ type Config struct {
 	PrimaryColorDark  string                       // HSL values for dark mode, e.g., "142 70% 50%"
 	AppTranslations   map[string]map[string]string // App-specific translations: lang -> key -> value
 	InitialLanguage   string                       // Initial language code (e.g., "en", "de", "ja")
-	OnLanguageChange  func(lang string)            // Callback when user changes language
 }
 
 // Option is a function that configures a Flow.
@@ -99,14 +98,6 @@ func WithPrimaryColor(light, dark string) Option {
 func WithInitialLanguage(lang string) Option {
 	return func(c *Config) {
 		c.InitialLanguage = lang
-	}
-}
-
-// WithLanguageChangeCallback sets a callback that is called when the user changes the UI language.
-// Use this to persist the language preference (e.g., to registry) so it can be restored later.
-func WithLanguageChangeCallback(callback func(lang string)) Option {
-	return func(c *Config) {
-		c.OnLanguageChange = callback
 	}
 }
 

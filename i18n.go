@@ -45,6 +45,13 @@ func SetLanguage(lang string, appTrans map[string]map[string]string) {
 	langMu.Unlock()
 }
 
+// GetLanguage returns the current UI language code.
+func GetLanguage() string {
+	langMu.RLock()
+	defer langMu.RUnlock()
+	return currentLanguage
+}
+
 // T translates a string immediately using the current language.
 // Call SetLanguage() before rendering to ensure correct translations.
 //
