@@ -372,3 +372,24 @@ func scanForAppByName(root registry.Key, displayName string) (*AppInfo, string, 
 
 	return nil, "", nil
 }
+
+// LanguageToLCID converts a language code to Windows LCID.
+// Supports the 12 languages commonly used in installer UIs.
+// Returns 0 if the language is not in the mapping.
+func LanguageToLCID(code string) uint32 {
+	lcidMap := map[string]uint32{
+		"de":      1031, // German
+		"en":      1033, // English (US)
+		"es":      1034, // Spanish
+		"fr":      1036, // French
+		"it":      1040, // Italian
+		"ja":      1041, // Japanese
+		"ko":      1042, // Korean
+		"pt":      1046, // Portuguese (Brazil)
+		"ru":      1049, // Russian
+		"th":      1054, // Thai
+		"zh-Hans": 2052, // Simplified Chinese
+		"zh-Hant": 1028, // Traditional Chinese (Taiwan)
+	}
+	return lcidMap[code]
+}
