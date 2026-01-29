@@ -192,6 +192,11 @@ func New(opts ...Option) (*Flow, error) {
 				f.mu.Unlock()
 				SetLanguage(lang, f.config.AppTranslations) // Update global state so T()/TF() use new language immediately
 
+				// Notify app of language change (for persisting preference)
+				if f.config.OnLanguageChange != nil {
+					f.config.OnLanguageChange(lang)
+				}
+
 				// Send response so ShowPage returns and caller can rebuild page
 				select {
 				case f.responseCh <- messageResponse{
