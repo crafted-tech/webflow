@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build linux
 
 package platform
 
@@ -56,10 +56,6 @@ func AcquireSingleInstance(name string) (release func(), ok bool) {
 	}, true
 }
 
-// AllowSetForegroundForAnyProcess is a no-op on macOS.
-// On Windows, it grants foreground window rights to other processes.
-func AllowSetForegroundForAnyProcess() {}
-
 // IsSingleInstanceRunning checks if another instance with the given name is running.
 // This does not acquire the lock, just checks if it exists and is locked.
 func IsSingleInstanceRunning(name string) bool {
@@ -90,3 +86,7 @@ func IsSingleInstanceRunning(name string) bool {
 	syscall.Flock(int(file.Fd()), syscall.LOCK_UN)
 	return false
 }
+
+// AllowSetForegroundForAnyProcess is a no-op on Linux.
+// On Windows, it grants foreground window rights to other processes.
+func AllowSetForegroundForAnyProcess() {}

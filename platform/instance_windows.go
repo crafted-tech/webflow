@@ -3,6 +3,8 @@
 package platform
 
 import (
+	"syscall"
+
 	"golang.org/x/sys/windows"
 )
 
@@ -38,6 +40,17 @@ func AcquireSingleInstance(name string) (release func(), ok bool) {
 	}
 
 	return func() { windows.CloseHandle(handle) }, true
+}
+
+var procAllowSetForegroundWindow = syscall.NewLazyDLL("user32.dll").NewProc("AllowSetForegroundWindow")
+
+// AllowSetForegroundForAnyProcess grants any process the one-time right to
+// call SetForegroundWindow. Call this from a second instance (which holds
+// foreground rights as a user-launched process) before signaling the first
+// instance to come to foreground.
+func AllowSetForegroundForAnyProcess() {
+	const ASFW_ANY = 0xFFFFFFFF
+	procAllowSetForegroundWindow.Call(ASFW_ANY)
 }
 
 // IsSingleInstanceRunning checks if another instance with the given name is running.
