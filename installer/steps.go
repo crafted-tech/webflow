@@ -51,6 +51,23 @@ func StepScheduleSelfDelete() Step {
 	}
 }
 
+// StepLaunchAsSessionUser creates a Step that launches an executable as the
+// active console session user. On Windows this uses WTS APIs to start the
+// process on the user's desktop; on other platforms it starts directly.
+// The step succeeds even if the launch fails (best-effort).
+func StepLaunchAsSessionUser(exePath string) Step {
+	return Step{
+		Name: "Relaunch application",
+		Action: func() StepResult {
+			pid, err := platform.LaunchAsSessionUser(exePath)
+			if err != nil {
+				return Failed(fmt.Errorf("launch as session user: %w", err))
+			}
+			return Success(fmt.Sprintf("PID %d", pid))
+		},
+	}
+}
+
 // StepScheduleFileDelete creates a Step that schedules a file for deletion.
 // The file will be deleted when it's no longer in use.
 func StepScheduleFileDelete(path string) Step {
