@@ -326,10 +326,14 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 	}
 
 	page := Page{
-		Title:    title,
-		Content:  content,
-		Icon:     cfg.Icon,
-		Subtitle: cfg.Subtitle,
+		Title:      title,
+		Content:    content,
+		Icon:       cfg.Icon,
+		Subtitle:   cfg.Subtitle,
+		Logo:        cfg.Logo,
+		LogoWidth:   cfg.LogoWidth,
+		LogoHeight:  cfg.LogoHeight,
+		CenterTitle: cfg.CenterTitle,
 	}
 
 	if cfg.ButtonBar != nil {

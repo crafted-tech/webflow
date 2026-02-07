@@ -293,12 +293,16 @@ type MenuItem struct {
 
 // Page defines a wizard page with content and navigation buttons.
 type Page struct {
-	Title     string    // Main title displayed at the top
-	Subtitle  string    // Optional subtitle/description below the title
-	Icon      string    // Icon name ("info", "warning", "error", "success") or custom SVG
-	Content   any       // Content: string (message), []Choice, []FormField, or ProgressConfig
-	ButtonBar ButtonBar // Navigation buttons with fixed positions (preferred)
-	Buttons   []Button  // Deprecated: use ButtonBar instead. Legacy button array.
+	Title      string    // Main title displayed at the top
+	Subtitle   string    // Optional subtitle/description below the title
+	Icon       string    // Icon name ("info", "warning", "error", "success") or custom SVG
+	Logo        []byte // Optional SVG/PNG logo data rendered above the title
+	LogoWidth   int    // Logo width in pixels (0 for auto)
+	LogoHeight  int    // Logo height in pixels (0 for auto)
+	CenterTitle bool   // Center the title text horizontally
+	Content    any       // Content: string (message), []Choice, []FormField, or ProgressConfig
+	ButtonBar  ButtonBar // Navigation buttons with fixed positions (preferred)
+	Buttons    []Button  // Deprecated: use ButtonBar instead. Legacy button array.
 }
 
 // ProgressConfig configures a progress page.
@@ -308,9 +312,13 @@ type ProgressConfig struct {
 
 // PageConfig holds configuration for pages that accept PageOption.
 type PageConfig struct {
-	ButtonBar *ButtonBar
-	Icon      string
-	Subtitle  string
+	ButtonBar  *ButtonBar
+	Icon       string
+	Subtitle   string
+	Logo        []byte
+	LogoWidth   int
+	LogoHeight  int
+	CenterTitle bool
 }
 
 // PageOption configures a page.
@@ -334,6 +342,24 @@ func WithIcon(icon string) PageOption {
 func WithSubtitle(subtitle string) PageOption {
 	return func(c *PageConfig) {
 		c.Subtitle = subtitle
+	}
+}
+
+// WithCenterTitle centers the page title horizontally.
+func WithCenterTitle() PageOption {
+	return func(c *PageConfig) {
+		c.CenterTitle = true
+	}
+}
+
+// WithLogo sets a logo image (SVG or PNG bytes) to display above the page title.
+// Pass 0 for width or height to scale proportionally from the other dimension.
+// If both are 0, height defaults to 48px.
+func WithLogo(logo []byte, width, height int) PageOption {
+	return func(c *PageConfig) {
+		c.Logo = logo
+		c.LogoWidth = width
+		c.LogoHeight = height
 	}
 }
 

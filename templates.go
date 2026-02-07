@@ -59,12 +59,40 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 	// Header
 	buf.WriteString(`        <div class="flow-header">
 `)
+	if len(page.Logo) > 0 {
+		logoData := string(page.Logo)
+		var imgSrc string
+		if strings.HasPrefix(logoData, "<svg") || strings.HasPrefix(logoData, "<?xml") {
+			imgSrc = "data:image/svg+xml;base64," + encodeBase64(page.Logo)
+		} else {
+			imgSrc = "data:image/png;base64," + encodeBase64(page.Logo)
+		}
+		// Build size style: width-only, height-only, both, or default
+		var sizeStyle string
+		switch {
+		case page.LogoWidth > 0 && page.LogoHeight > 0:
+			sizeStyle = fmt.Sprintf("width:%dpx;height:%dpx;", page.LogoWidth, page.LogoHeight)
+		case page.LogoWidth > 0:
+			sizeStyle = fmt.Sprintf("width:%dpx;", page.LogoWidth)
+		case page.LogoHeight > 0:
+			sizeStyle = fmt.Sprintf("height:%dpx;", page.LogoHeight)
+		default:
+			sizeStyle = "height:48px;"
+		}
+		buf.WriteString(fmt.Sprintf(`            <div style="margin-bottom: 0.5em; display: flex; justify-content: center;"><img src="%s" alt="" style="%s"></div>
+`, imgSrc, sizeStyle))
+	}
 	if page.Icon != "" {
 		buf.WriteString(renderIcon(page.Icon))
 	}
 	if page.Title != "" {
-		buf.WriteString(`            <h1 class="flow-title">` + html.EscapeString(page.Title) + `</h1>
+		if page.CenterTitle {
+			buf.WriteString(`            <h1 class="flow-title" style="text-align:center;">` + html.EscapeString(page.Title) + `</h1>
 `)
+		} else {
+			buf.WriteString(`            <h1 class="flow-title">` + html.EscapeString(page.Title) + `</h1>
+`)
+		}
 	}
 	if page.Subtitle != "" {
 		buf.WriteString(`            <p class="flow-subtitle">` + html.EscapeString(page.Subtitle) + `</p>
