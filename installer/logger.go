@@ -75,11 +75,6 @@ func NewLoggerToFile(logPath string) (*Logger, error) {
 		messages: make([]string, 0, 100),
 	}
 
-	// Write header
-	l.Info("=== Log (subprocess) ===")
-	l.Info("Started: %s", time.Now().Format(time.RFC3339))
-	l.Info("Log file: %s", logPath)
-
 	return l, nil
 }
 
