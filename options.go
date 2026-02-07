@@ -22,6 +22,7 @@ type Config struct {
 	PrimaryColorDark  string                       // HSL values for dark mode, e.g., "142 70% 50%"
 	AppTranslations   map[string]map[string]string // App-specific translations: lang -> key -> value
 	InitialLanguage   string                       // Initial language code (e.g., "en", "de", "ja")
+	UserDataFolder    string                       // WebView2 user data folder (Windows only, passed to webframe)
 }
 
 // Option is a function that configures a Flow.
@@ -98,6 +99,15 @@ func WithPrimaryColor(light, dark string) Option {
 func WithInitialLanguage(lang string) Option {
 	return func(c *Config) {
 		c.InitialLanguage = lang
+	}
+}
+
+// WithUserDataFolder sets the WebView2 user data folder path (Windows only, required).
+// Each app must specify a unique folder to prevent WebView2 cross-app interference.
+// Convention: %LOCALAPPDATA%\webframe\<app-name>\
+func WithUserDataFolder(path string) Option {
+	return func(c *Config) {
+		c.UserDataFolder = path
 	}
 }
 

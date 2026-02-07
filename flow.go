@@ -71,6 +71,7 @@ func New(opts ...Option) (*Flow, error) {
 		Height:         cfg.Height,
 		Resizable:      resizable,
 		NativeTitleBar: nativeTitleBar,
+		UserDataFolder: cfg.UserDataFolder,
 		StartHidden:    true,
 		OnClose: func() {
 			// Mark flow as closed so no further event loops are entered
