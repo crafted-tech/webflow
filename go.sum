@@ -1,7 +1,7 @@
 github.com/adnsv/multimon v0.6.0 h1:Dfli8ikYO6DOdFroP9OvjRtPwJhxY70BI6SychWfP3c=
 github.com/adnsv/multimon v0.6.0/go.mod h1:XOzceRrx5Es7tk3fZtSexv9SATDvSM9BDCdTYezwoFo=
-github.com/crafted-tech/webframe v0.3.0-rc.13 h1:AnZN/jQR9v784oOB3qbGxaIGARYVhSaqa7eypwwHmXM=
-github.com/crafted-tech/webframe v0.3.0-rc.13/go.mod h1:wj+1KcWLMfiby4LO8Hg8jpw849g5mCAzymdo7zBNIMc=
+github.com/crafted-tech/webframe v0.3.0-rc.14 h1:g3oHZ6QUbpwJJhDez+51PKf5vZxmgikZvxUg4m+PMSA=
+github.com/crafted-tech/webframe v0.3.0-rc.14/go.mod h1:wj+1KcWLMfiby4LO8Hg8jpw849g5mCAzymdo7zBNIMc=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
