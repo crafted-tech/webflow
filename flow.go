@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 	"sync/atomic"
 
@@ -20,22 +19,6 @@ var (
 	lightBackdropFrameColorFallback = types.RGBA{R: 0xE8, G: 0xE9, B: 0xEB, A: 0xFF}
 )
 
-// debugLog writes to a crash log for debugging
-func debugLog(msg string) {
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return
-	}
-	logDir := filepath.Join(cacheDir, "UnisonWebView", "logs")
-	os.MkdirAll(logDir, 0755)
-	f, err := os.OpenFile(filepath.Join(logDir, "crash.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fmt.Fprintf(f, "[FLOW] %s\n", msg)
-}
-
 // Flow manages the wizard UI, displaying pages and collecting user responses.
 type Flow struct {
 	wv                types.WebFrame
@@ -50,6 +33,9 @@ type Flow struct {
 
 	// Progress control
 	progressCancelled atomic.Bool
+
+	// Window state
+	closed atomic.Bool // Set when window X button is clicked; prevents further event loops
 }
 
 // messageResponse represents a message received from JavaScript.
@@ -87,6 +73,8 @@ func New(opts ...Option) (*Flow, error) {
 		NativeTitleBar: nativeTitleBar,
 		StartHidden:    true,
 		OnClose: func() {
+			// Mark flow as closed so no further event loops are entered
+			f.closed.Store(true)
 			// Send a close message when window X button is clicked
 			select {
 			case f.responseCh <- messageResponse{Type: "window_close", Button: "close"}:
@@ -153,7 +141,6 @@ func New(opts ...Option) (*Flow, error) {
 		}
 
 		if resp.Type == "browse_path" {
-			debugLog("browse_path message received")
 			f.handleBrowsePath(resp)
 			return
 		}
@@ -213,19 +200,14 @@ func New(opts ...Option) (*Flow, error) {
 
 		select {
 		case f.responseCh <- resp:
-			debugLog(fmt.Sprintf("message handler: sent to responseCh, button=%s", resp.Button))
 			// If we should quit on message, do so
 			f.mu.Lock()
 			shouldQuit := f.quitOnMsg
 			f.mu.Unlock()
-			debugLog(fmt.Sprintf("message handler: shouldQuit=%v", shouldQuit))
 			if shouldQuit {
-				debugLog("message handler: calling Quit()")
 				f.wv.Quit()
-				debugLog("message handler: Quit() returned")
 			}
 		default:
-			debugLog("message handler: channel full, dropping message")
 		}
 	})
 
@@ -258,6 +240,11 @@ func (f *Flow) Run() {
 // showPageInternal displays a page and returns the raw messageResponse.
 // This is used internally by Show* methods to get the raw response.
 func (f *Flow) showPageInternal(page Page) messageResponse {
+	// If the window was already closed, return immediately
+	if f.closed.Load() {
+		return messageResponse{Type: "window_close", Button: "close"}
+	}
+
 	f.mu.Lock()
 	lang := f.language
 	f.mu.Unlock()
@@ -579,6 +566,9 @@ func (f *Flow) ShowError(title, message string) {
 // If detailsContent is provided, a Details button is shown that opens a log viewer
 // with Copy and optional Save functionality.
 func (f *Flow) ShowErrorDetails(title, message, detailsContent string, onCopy func(), onSave ...func()) {
+	if f.closed.Load() {
+		return
+	}
 	if detailsContent == "" {
 		// No details - just show simple error
 		f.ShowError(title, message)
@@ -961,7 +951,9 @@ func (f *Flow) ShowMenu(title string, items []MenuItem, opts ...PageOption) any 
 // The work function receives a LogWriter interface to write log lines.
 // This method blocks until the work is complete or cancelled.
 func (f *Flow) ShowLog(title string, work func(log LogWriter)) {
-	debugLog("ShowLog: starting")
+	if f.closed.Load() {
+		return
+	}
 	f.progressCancelled.Store(false)
 
 	page := Page{
@@ -988,12 +980,9 @@ func (f *Flow) ShowLog(title string, work func(log LogWriter)) {
 
 	// Run work in goroutine
 	go func() {
-		debugLog("ShowLog: work goroutine starting")
 		work(logWriter)
-		debugLog("ShowLog: work goroutine finished")
 		close(workDone)
 		if !f.progressCancelled.Load() {
-			debugLog("ShowLog: work goroutine calling Quit")
 			f.wv.Quit()
 		}
 	}()
@@ -1080,7 +1069,9 @@ func (l *logWriterImpl) Cancelled() bool {
 // The work function receives a FileList interface to add/update files.
 // This method blocks until the work is complete or cancelled.
 func (f *Flow) ShowFileProgress(title string, work func(files FileList)) {
-	debugLog("ShowFileProgress: starting")
+	if f.closed.Load() {
+		return
+	}
 	f.progressCancelled.Store(false)
 
 	page := Page{
@@ -1107,12 +1098,9 @@ func (f *Flow) ShowFileProgress(title string, work func(files FileList)) {
 
 	// Run work in goroutine
 	go func() {
-		debugLog("ShowFileProgress: work goroutine starting")
 		work(fileList)
-		debugLog("ShowFileProgress: work goroutine finished")
 		close(workDone)
 		if !f.progressCancelled.Load() {
-			debugLog("ShowFileProgress: work goroutine calling Quit")
 			f.wv.Quit()
 		}
 	}()
@@ -1244,6 +1232,9 @@ func (f *Flow) ShowReviewWithSave(title, content string, onCopy, onSave func(), 
 }
 
 func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), opts ...PageOption) {
+	if f.closed.Load() {
+		return
+	}
 	// Extract subtitle from options
 	subtitle := ""
 	var userButtonBar *ButtonBar
@@ -1363,7 +1354,9 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 //   - nil if work completed successfully
 //   - Navigation (Cancel/Close) if user cancelled
 func (f *Flow) ShowProgress(title string, work func(p Progress)) any {
-	debugLog("ShowProgress: starting")
+	if f.closed.Load() {
+		return Close
+	}
 	f.progressCancelled.Store(false)
 
 	page := Page{
@@ -1390,18 +1383,12 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) any {
 
 	// Run work in goroutine
 	go func() {
-		debugLog("ShowProgress: work goroutine starting")
 		work(progress)
-		debugLog("ShowProgress: work goroutine finished, closing workDone")
 		close(workDone)
 		// Only quit the event loop if we weren't cancelled
 		// (if cancelled, the message handler already called Quit)
 		if !f.progressCancelled.Load() {
-			debugLog("ShowProgress: work goroutine calling Quit (not cancelled)")
 			f.wv.Quit()
-			debugLog("ShowProgress: work goroutine Quit returned")
-		} else {
-			debugLog("ShowProgress: work goroutine skipping Quit (was cancelled)")
 		}
 	}()
 
@@ -1411,9 +1398,7 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) any {
 	f.mu.Unlock()
 
 	// Run event loop until work completes or cancel is clicked
-	debugLog("ShowProgress: calling Run()")
 	f.wv.Run()
-	debugLog("ShowProgress: Run() returned")
 
 	// Disable quit on message
 	f.mu.Lock()
@@ -1421,23 +1406,17 @@ func (f *Flow) ShowProgress(title string, work func(p Progress)) any {
 	f.mu.Unlock()
 
 	// Check if cancelled
-	debugLog("ShowProgress: checking responseCh")
 	select {
 	case msg := <-f.responseCh:
-		debugLog(fmt.Sprintf("ShowProgress: got message from responseCh: %+v", msg))
 		if msg.Button == ButtonCancel {
-			debugLog("ShowProgress: setting progressCancelled")
 			f.progressCancelled.Store(true)
 			// Don't wait for work to finish - the message loop has exited
 			// and waiting would freeze the UI. The work goroutine will
 			// check Cancelled() and clean up on its own.
-			debugLog("ShowProgress: returning cancelled response")
 			return Cancel
 		}
 	default:
-		debugLog("ShowProgress: work completed normally (no message in responseCh)")
 	}
-	debugLog("ShowProgress: returning completed response")
 	return nil
 }
 
@@ -1496,12 +1475,9 @@ type webviewFocuser interface {
 // handleBrowsePath handles a browse_path message from JavaScript.
 // It shows a native file or folder selection dialog and updates the input field with the result.
 func (f *Flow) handleBrowsePath(resp messageResponse) {
-	debugLog(fmt.Sprintf("handleBrowsePath: resp.Data=%v", resp.Data))
-
 	// Get the target input ID from the message data
 	targetID, _ := resp.Data["target"].(string)
 	if targetID == "" {
-		debugLog("handleBrowsePath: targetID is empty, returning")
 		return
 	}
 
@@ -1525,7 +1501,6 @@ func (f *Flow) handleBrowsePath(resp messageResponse) {
 	// Check if dialogs are supported
 	d, ok := f.wv.(types.Dialogs)
 	if !ok {
-		debugLog("handleBrowsePath: dialogs not supported")
 		return
 	}
 
@@ -1538,7 +1513,6 @@ func (f *Flow) handleBrowsePath(resp messageResponse) {
 	}
 
 	if !ok || path == "" {
-		debugLog("handleBrowsePath: path is empty (cancelled)")
 		return
 	}
 
