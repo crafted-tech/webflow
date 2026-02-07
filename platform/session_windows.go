@@ -13,22 +13,29 @@ import (
 // LaunchAsSessionUser launches an executable in the active console user's
 // desktop session at the user's normal (non-elevated) privilege level.
 //
-// The function tries two strategies in order:
-//  1. Shell token approach — borrows the token from the running Explorer
-//     shell process. Works when the caller is a UAC-elevated admin process
-//     and the desktop shell is running.
-//  2. WTS approach — uses WTSQueryUserToken + CreateProcessAsUser. Works
-//     when the caller is running as SYSTEM (e.g., a Windows service) and
-//     has SE_TCB_NAME privilege.
+// The function picks the right strategy based on the caller's identity:
+//   - SYSTEM (e.g., a Windows service or its child process): uses WTS
+//     approach (WTSQueryUserToken + CreateProcessAsUser) which correctly
+//     targets the desktop user's session. LaunchDeElevated is skipped
+//     because its schtasks approach would create the task as SYSTEM
+//     (no /ru flag → inherits caller identity), launching the app in
+//     session 0 instead of the user's desktop.
+//   - Elevated admin (e.g., UAC-elevated installer): uses LaunchDeElevated
+//     which borrows the Explorer shell token to de-elevate.
+//   - Non-elevated: falls through to WTS as a last resort.
 //
 // Returns the PID of the launched process.
 func LaunchAsSessionUser(exePath string) (uint32, error) {
-	// Try the shell-token approach first (works from elevated admin).
-	if pid, err := LaunchDeElevated(exePath); err == nil {
-		return pid, nil
+	// When running as SYSTEM, skip LaunchDeElevated entirely — its strategies
+	// (scheduled task, COM to Explorer, shell token) all either run as SYSTEM
+	// or fail. Go straight to WTS which is designed for SYSTEM → user session.
+	if !isRunningAsSystem() {
+		if pid, err := LaunchDeElevated(exePath); err == nil {
+			return pid, nil
+		}
 	}
 
-	// Fall back to WTS approach (works from SYSTEM).
+	// WTS approach (works from SYSTEM — requires SE_TCB_NAME privilege).
 
 	// Get the active console session (the one with the physical keyboard/monitor).
 	sessionID := windows.WTSGetActiveConsoleSessionId()
@@ -105,4 +112,27 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 	windows.CloseHandle(pi.Thread)
 
 	return pi.ProcessId, nil
+}
+
+// isRunningAsSystem reports whether the current process is running as
+// the NT AUTHORITY\SYSTEM account (SID S-1-5-18).
+func isRunningAsSystem() bool {
+	var token windows.Token
+	if err := windows.OpenProcessToken(windows.CurrentProcess(), windows.TOKEN_QUERY, &token); err != nil {
+		return false
+	}
+	defer token.Close()
+
+	user, err := token.GetTokenUser()
+	if err != nil {
+		return false
+	}
+
+	// Well-known SID: S-1-5-18 (Local System)
+	systemSID, err := windows.StringToSid("S-1-5-18")
+	if err != nil {
+		return false
+	}
+
+	return windows.EqualSid(user.User.Sid, systemSID)
 }
