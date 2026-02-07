@@ -299,6 +299,7 @@ type Page struct {
 	Logo        []byte // Optional SVG/PNG logo data rendered above the title
 	LogoWidth   int    // Logo width in pixels (0 for auto)
 	LogoHeight  int    // Logo height in pixels (0 for auto)
+	LogoAlign   string // Logo horizontal alignment: "left", "center", "right" (default: "center")
 	CenterTitle bool   // Center the title text horizontally
 	Content    any       // Content: string (message), []Choice, []FormField, or ProgressConfig
 	ButtonBar  ButtonBar // Navigation buttons with fixed positions (preferred)
@@ -318,6 +319,7 @@ type PageConfig struct {
 	Logo        []byte
 	LogoWidth   int
 	LogoHeight  int
+	LogoAlign   string
 	CenterTitle bool
 }
 
@@ -360,6 +362,14 @@ func WithLogo(logo []byte, width, height int) PageOption {
 		c.Logo = logo
 		c.LogoWidth = width
 		c.LogoHeight = height
+	}
+}
+
+// WithLogoAlign sets the horizontal alignment of the logo: "left", "center", or "right".
+// Default is "center".
+func WithLogoAlign(align string) PageOption {
+	return func(c *PageConfig) {
+		c.LogoAlign = align
 	}
 }
 

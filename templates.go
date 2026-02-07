@@ -60,13 +60,6 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 	buf.WriteString(`        <div class="flow-header">
 `)
 	if len(page.Logo) > 0 {
-		logoData := string(page.Logo)
-		var imgSrc string
-		if strings.HasPrefix(logoData, "<svg") || strings.HasPrefix(logoData, "<?xml") {
-			imgSrc = "data:image/svg+xml;base64," + encodeBase64(page.Logo)
-		} else {
-			imgSrc = "data:image/png;base64," + encodeBase64(page.Logo)
-		}
 		// Build size style: width-only, height-only, both, or default
 		var sizeStyle string
 		switch {
@@ -79,8 +72,26 @@ func renderPage(page Page, darkMode bool, primaryLight, primaryDark string) stri
 		default:
 			sizeStyle = "height:48px;"
 		}
-		buf.WriteString(fmt.Sprintf(`            <div style="margin-bottom: 0.5em; display: flex; justify-content: center;"><img src="%s" alt="" style="%s"></div>
-`, imgSrc, sizeStyle))
+
+		// Horizontal alignment
+		alignClass := "page-logo-center"
+		switch page.LogoAlign {
+		case "left":
+			alignClass = "page-logo-left"
+		case "right":
+			alignClass = "page-logo-right"
+		}
+
+		logoData := string(page.Logo)
+		if strings.HasPrefix(logoData, "<svg") || strings.HasPrefix(logoData, "<?xml") {
+			// SVG — render inline so currentColor inherits the theme foreground
+			buf.WriteString(fmt.Sprintf(`            <div class="page-logo %s"><div style="%s">%s</div></div>
+`, alignClass, sizeStyle, logoData))
+		} else {
+			imgSrc := "data:image/png;base64," + encodeBase64(page.Logo)
+			buf.WriteString(fmt.Sprintf(`            <div class="page-logo %s"><img src="%s" alt="" style="%s"></div>
+`, alignClass, imgSrc, sizeStyle))
+		}
 	}
 	if page.Icon != "" {
 		buf.WriteString(renderIcon(page.Icon))

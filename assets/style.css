@@ -90,6 +90,33 @@ button, input, select, textarea {
     margin-bottom: 1.5rem;
 }
 
+.page-logo {
+    display: flex;
+    margin-bottom: 0.5em;
+    color: hsl(var(--foreground));
+}
+
+.page-logo-center { justify-content: center; }
+.page-logo-left   { justify-content: flex-start; }
+.page-logo-right  { justify-content: flex-end; }
+
+.page-logo > div {
+    display: flex;
+    align-items: center;
+}
+
+.page-logo svg {
+    width: auto;
+    height: 100%;
+    max-width: 100%;
+}
+
+.page-logo img {
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .flow-title {
     font-size: 1.5rem;
     font-weight: 600;

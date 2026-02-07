@@ -333,6 +333,7 @@ func applyPageConfig(title string, content any, opts []PageOption) Page {
 		Logo:        cfg.Logo,
 		LogoWidth:   cfg.LogoWidth,
 		LogoHeight:  cfg.LogoHeight,
+		LogoAlign:   cfg.LogoAlign,
 		CenterTitle: cfg.CenterTitle,
 	}
 
