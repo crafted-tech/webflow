@@ -91,6 +91,14 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 	}
 
 	var pi windows.ProcessInformation
+
+	// CREATE_BREAKAWAY_FROM_JOB detaches the child from the caller's job
+	// object. Without this, the app inherits the job from the SFX/installer
+	// chain and gets killed when the SFX exits (JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE).
+	// The SCM's per-service job sets JOB_OBJECT_LIMIT_BREAKAWAY_OK, so this
+	// works from the service process chain. If the job doesn't allow breakaway,
+	// fall back to creating without the flag (better than not launching at all).
+	flags := uint32(windows.CREATE_UNICODE_ENVIRONMENT | windows.CREATE_BREAKAWAY_FROM_JOB)
 	err = windows.CreateProcessAsUser(
 		primaryToken,
 		exePathPtr,
@@ -98,14 +106,32 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 		nil,   // process security attributes
 		nil,   // thread security attributes
 		false, // inherit handles
-		windows.CREATE_UNICODE_ENVIRONMENT,
+		flags,
 		envBlock,
 		workDirPtr, // current directory
 		&si,
 		&pi,
 	)
 	if err != nil {
-		return 0, fmt.Errorf("create process as user: %w", err)
+		// Retry without CREATE_BREAKAWAY_FROM_JOB — the job may not allow
+		// breakaway, but launching inside the job is better than not launching.
+		flags = windows.CREATE_UNICODE_ENVIRONMENT
+		err = windows.CreateProcessAsUser(
+			primaryToken,
+			exePathPtr,
+			nil,
+			nil,
+			nil,
+			false,
+			flags,
+			envBlock,
+			workDirPtr,
+			&si,
+			&pi,
+		)
+		if err != nil {
+			return 0, fmt.Errorf("create process as user: %w", err)
+		}
 	}
 
 	windows.CloseHandle(pi.Process)
