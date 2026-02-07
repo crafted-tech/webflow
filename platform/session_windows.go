@@ -4,18 +4,32 @@ package platform
 
 import (
 	"fmt"
+	"path/filepath"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
 // LaunchAsSessionUser launches an executable in the active console user's
-// desktop session. This is needed when running as SYSTEM (e.g., from a
-// Windows service or elevated installer) and you want the process to appear
-// on the logged-in user's desktop with their token and environment.
+// desktop session at the user's normal (non-elevated) privilege level.
+//
+// The function tries two strategies in order:
+//  1. Shell token approach — borrows the token from the running Explorer
+//     shell process. Works when the caller is a UAC-elevated admin process
+//     and the desktop shell is running.
+//  2. WTS approach — uses WTSQueryUserToken + CreateProcessAsUser. Works
+//     when the caller is running as SYSTEM (e.g., a Windows service) and
+//     has SE_TCB_NAME privilege.
 //
 // Returns the PID of the launched process.
 func LaunchAsSessionUser(exePath string) (uint32, error) {
+	// Try the shell-token approach first (works from elevated admin).
+	if pid, err := LaunchDeElevated(exePath); err == nil {
+		return pid, nil
+	}
+
+	// Fall back to WTS approach (works from SYSTEM).
+
 	// Get the active console session (the one with the physical keyboard/monitor).
 	sessionID := windows.WTSGetActiveConsoleSessionId()
 	if sessionID == 0xFFFFFFFF {
@@ -64,17 +78,22 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 		return 0, fmt.Errorf("invalid exe path: %w", err)
 	}
 
+	workDirPtr, err := windows.UTF16PtrFromString(filepath.Dir(exePath))
+	if err != nil {
+		return 0, fmt.Errorf("invalid work dir: %w", err)
+	}
+
 	var pi windows.ProcessInformation
 	err = windows.CreateProcessAsUser(
 		primaryToken,
 		exePathPtr,
-		nil, // command line
-		nil, // process security attributes
-		nil, // thread security attributes
-		false,
+		nil,   // command line
+		nil,   // process security attributes
+		nil,   // thread security attributes
+		false, // inherit handles
 		windows.CREATE_UNICODE_ENVIRONMENT,
 		envBlock,
-		nil, // current directory (inherit)
+		workDirPtr, // current directory
 		&si,
 		&pi,
 	)
