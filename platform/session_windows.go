@@ -4,6 +4,7 @@ package platform
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"unsafe"
 
@@ -129,15 +130,68 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 			&si,
 			&pi,
 		)
-		if err != nil {
-			return 0, fmt.Errorf("create process as user: %w", err)
+	}
+	if err != nil {
+		// CreateProcessAsUser failed. Fall back to schtasks with the session
+		// user's identity — the same proven approach used by LaunchDeElevated
+		// (launchViaScheduledTask) but with /ru <user> /it so the task runs
+		// in the user's interactive session rather than as the caller (SYSTEM).
+		if schtasksErr := launchViaScheduledTaskForUser(exePath, primaryToken); schtasksErr != nil {
+			return 0, fmt.Errorf("CreateProcessAsUser: %w; schtasks fallback: %w", err, schtasksErr)
 		}
+		return 0, nil
 	}
 
 	windows.CloseHandle(pi.Process)
 	windows.CloseHandle(pi.Thread)
 
 	return pi.ProcessId, nil
+}
+
+// launchViaScheduledTaskForUser creates and immediately runs a one-shot
+// scheduled task targeting a specific user's interactive session. This mirrors
+// launchViaScheduledTask in deelevate_windows.go but specifies the user via
+// /ru and /it so the task runs in their desktop session (not as the caller).
+// The /it flag uses the user's interactive token — no password is needed.
+func launchViaScheduledTaskForUser(exePath string, userToken windows.Token) error {
+	// Look up the account name from the token so we can pass it to schtasks /ru.
+	tokenUser, err := userToken.GetTokenUser()
+	if err != nil {
+		return fmt.Errorf("get token user: %w", err)
+	}
+	account, domain, _, err := tokenUser.User.Sid.LookupAccount("")
+	if err != nil {
+		return fmt.Errorf("lookup account: %w", err)
+	}
+	ruArg := account
+	if domain != "" {
+		ruArg = domain + `\` + account
+	}
+
+	taskName := fmt.Sprintf("UnisonLaunch_%d", os.Getpid())
+	schtasks := filepath.Join(os.Getenv("WINDIR"), "System32", "schtasks.exe")
+
+	if err := runHidden(schtasks, "/create",
+		"/tn", taskName,
+		"/tr", `"`+exePath+`"`,
+		"/sc", "once",
+		"/st", "00:00",
+		"/ru", ruArg,
+		"/it",
+		"/f",
+	); err != nil {
+		return fmt.Errorf("create task: %w", err)
+	}
+
+	AllowSetForegroundForAnyProcess()
+
+	if err := runHidden(schtasks, "/run", "/tn", taskName); err != nil {
+		runHidden(schtasks, "/delete", "/tn", taskName, "/f")
+		return fmt.Errorf("run task: %w", err)
+	}
+
+	runHidden(schtasks, "/delete", "/tn", taskName, "/f")
+	return nil
 }
 
 // isRunningAsSystem reports whether the current process is running as
