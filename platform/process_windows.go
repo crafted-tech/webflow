@@ -5,6 +5,7 @@ package platform
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"syscall"
 	"unsafe"
 
@@ -77,9 +78,45 @@ func IsProcessRunning(exeName string) bool {
 	return len(pids) > 0
 }
 
-// KillProcess terminates a process by PID.
+var debugPrivilegeOnce sync.Once
+
+// enableSeDebugPrivilege enables SeDebugPrivilege on the current process token,
+// allowing OpenProcess to access processes owned by other users. This is a
+// best-effort operation — it silently fails for non-admin callers.
+func enableSeDebugPrivilege() {
+	debugPrivilegeOnce.Do(func() {
+		var token windows.Token
+		err := windows.OpenProcessToken(windows.CurrentProcess(),
+			windows.TOKEN_ADJUST_PRIVILEGES|windows.TOKEN_QUERY, &token)
+		if err != nil {
+			return
+		}
+		defer token.Close()
+
+		privName, _ := windows.UTF16PtrFromString("SeDebugPrivilege")
+		var luid windows.LUID
+		if windows.LookupPrivilegeValue(nil, privName, &luid) != nil {
+			return
+		}
+
+		tp := windows.Tokenprivileges{
+			PrivilegeCount: 1,
+			Privileges: [1]windows.LUIDAndAttributes{
+				{Luid: luid, Attributes: windows.SE_PRIVILEGE_ENABLED},
+			},
+		}
+		windows.AdjustTokenPrivileges(token, false, &tp, 0, nil, nil)
+	})
+}
+
+// KillProcess terminates a process by PID and waits for it to exit.
+// Enables SeDebugPrivilege so that processes owned by other users can be
+// terminated (requires administrator).
 func KillProcess(pid uint32) error {
-	handle, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, pid)
+	enableSeDebugPrivilege()
+
+	handle, err := windows.OpenProcess(
+		windows.PROCESS_TERMINATE|windows.SYNCHRONIZE, false, pid)
 	if err != nil {
 		return fmt.Errorf("open process %d: %w", pid, err)
 	}
@@ -87,6 +124,12 @@ func KillProcess(pid uint32) error {
 
 	if err := windows.TerminateProcess(handle, 1); err != nil {
 		return fmt.Errorf("terminate process %d: %w", pid, err)
+	}
+
+	// Wait for the process to fully exit so file handles are released.
+	event, _ := windows.WaitForSingleObject(handle, 5_000) // 5s timeout
+	if event == uint32(windows.WAIT_TIMEOUT) {
+		return fmt.Errorf("process %d did not exit within timeout", pid)
 	}
 	return nil
 }
