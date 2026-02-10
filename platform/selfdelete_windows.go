@@ -480,8 +480,7 @@ var (
 	procDestroyWindow            = user32.NewProc("DestroyWindow")
 	procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
 
-	kernel32                      = windows.NewLazySystemDLL("kernel32.dll")
-	procMsgWaitForMultipleObjects = kernel32.NewProc("MsgWaitForMultipleObjects")
+	procMsgWaitForMultipleObjects = user32.NewProc("MsgWaitForMultipleObjects")
 )
 
 const (
