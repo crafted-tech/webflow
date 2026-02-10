@@ -1241,9 +1241,10 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 	if f.closed.Load() {
 		return
 	}
-	// Extract subtitle from options
+	// Extract options
 	subtitle := ""
 	var userButtonBar *ButtonBar
+	var saveDialogOpts []DialogOption
 	for _, opt := range opts {
 		cfg := PageConfig{}
 		opt(&cfg)
@@ -1252,6 +1253,9 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 		}
 		if cfg.ButtonBar != nil {
 			userButtonBar = cfg.ButtonBar
+		}
+		if len(cfg.SaveDialogOpts) > 0 {
+			saveDialogOpts = cfg.SaveDialogOpts
 		}
 	}
 
@@ -1326,14 +1330,20 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 				continue // Stay in dialog, wait for more messages
 			case "review_save":
 				// Show native save file dialog
-				path, ok := f.SaveFile(
-					DialogTitle("Save As"),
-					DialogDefaultName("log.txt"),
-					DialogFilters(
-						FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
-						FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
-					),
-				)
+				var dialogOpts []DialogOption
+				if len(saveDialogOpts) > 0 {
+					dialogOpts = saveDialogOpts
+				} else {
+					dialogOpts = []DialogOption{
+						DialogTitle("Save As"),
+						DialogDefaultName("log.txt"),
+						DialogFilters(
+							FileFilter{Name: "Text Files", Patterns: []string{"*.txt"}},
+							FileFilter{Name: "All Files", Patterns: []string{"*.*"}},
+						),
+					}
+				}
+				path, ok := f.SaveFile(dialogOpts...)
 				if ok && path != "" {
 					// Write the content to the file
 					if err := os.WriteFile(path, []byte(content), 0644); err == nil {

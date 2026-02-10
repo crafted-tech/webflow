@@ -313,14 +313,15 @@ type ProgressConfig struct {
 
 // PageConfig holds configuration for pages that accept PageOption.
 type PageConfig struct {
-	ButtonBar  *ButtonBar
-	Icon       string
-	Subtitle   string
-	Logo        []byte
-	LogoWidth   int
-	LogoHeight  int
-	LogoAlign   string
-	CenterTitle bool
+	ButtonBar      *ButtonBar
+	Icon           string
+	Subtitle       string
+	Logo           []byte
+	LogoWidth      int
+	LogoHeight     int
+	LogoAlign      string
+	CenterTitle    bool
+	SaveDialogOpts []DialogOption
 }
 
 // PageOption configures a page.
@@ -370,6 +371,14 @@ func WithLogo(logo []byte, width, height int) PageOption {
 func WithLogoAlign(align string) PageOption {
 	return func(c *PageConfig) {
 		c.LogoAlign = align
+	}
+}
+
+// WithSaveDialogOptions sets the save file dialog options for review pages.
+// When provided, these options override the default save dialog behavior.
+func WithSaveDialogOptions(opts ...DialogOption) PageOption {
+	return func(c *PageConfig) {
+		c.SaveDialogOpts = opts
 	}
 }
 
