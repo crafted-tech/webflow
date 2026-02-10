@@ -821,13 +821,17 @@ func renderSummaryView(cfg SummaryConfig) string {
 			if cb.Checked {
 				checkedAttr = " checked"
 			}
+			exclusiveAttr := ""
+			if cb.ExclusiveGroup != "" {
+				exclusiveAttr = fmt.Sprintf(` data-exclusive-group="%s"`, html.EscapeString(cb.ExclusiveGroup))
+			}
 			buf.WriteString(fmt.Sprintf(`                <div class="form-group">
                     <div class="form-checkbox-group">
-                        <input type="checkbox" id="%s" class="form-checkbox summary-checkbox"%s%s onchange="window.updateSummaryCheckboxes()">
+                        <input type="checkbox" id="%s" class="form-checkbox summary-checkbox"%s%s%s onchange="window.updateSummaryCheckboxes()">
                         <label class="form-label" for="%s">%s</label>
                     </div>
                 </div>
-`, html.EscapeString(cb.ID), requiredAttr, checkedAttr, html.EscapeString(cb.ID), html.EscapeString(cb.Label)))
+`, html.EscapeString(cb.ID), requiredAttr, checkedAttr, exclusiveAttr, html.EscapeString(cb.ID), html.EscapeString(cb.Label)))
 		}
 		buf.WriteString(`            </div>
 `)

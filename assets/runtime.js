@@ -338,7 +338,19 @@
 
     // Update Install button based on summary checkboxes (for Summary page with required checkboxes)
     window.updateSummaryCheckboxes = function() {
-        // Only process if we have required checkboxes
+        // Handle exclusive groups: when a checkbox with data-exclusive-group is checked,
+        // uncheck all other checkboxes in the same group (radio-like behavior)
+        var changed = event && event.target;
+        if (changed && changed.checked && changed.hasAttribute('data-exclusive-group')) {
+            var group = changed.getAttribute('data-exclusive-group');
+            document.querySelectorAll('.summary-checkbox[data-exclusive-group="' + group + '"]').forEach(function(cb) {
+                if (cb !== changed) {
+                    cb.checked = false;
+                }
+            });
+        }
+
+        // Only process required checkbox logic if we have required checkboxes
         if (!window._summaryHasRequiredCheckboxes) return;
 
         // Check if all required checkboxes are checked

@@ -514,11 +514,12 @@ type SummaryItem struct {
 // SummaryCheckbox represents an acknowledgment checkbox in a summary display.
 // Used for downgrade/reinstall confirmations that require user acknowledgment.
 type SummaryCheckbox struct {
-	ID       string // Identifier for the checkbox (e.g., "downgrade", "reinstall")
-	Label    string // Checkbox label text
-	Required bool   // If true, Install button disabled until checked
-	Warning  string // Optional warning text shown above checkbox (yellow box)
-	Checked  bool   // Initial checked state (default: false)
+	ID             string // Identifier for the checkbox (e.g., "downgrade", "reinstall")
+	Label          string // Checkbox label text
+	Required       bool   // If true, Install button disabled until checked
+	Warning        string // Optional warning text shown above checkbox (yellow box)
+	Checked        bool   // Initial checked state (default: false)
+	ExclusiveGroup string // Checkboxes with the same group uncheck each other (radio behavior)
 }
 
 // SummaryConfig configures a summary/review display with labeled key-value pairs.
