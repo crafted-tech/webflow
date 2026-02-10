@@ -516,6 +516,7 @@ type SummaryItem struct {
 type SummaryCheckbox struct {
 	ID             string // Identifier for the checkbox (e.g., "downgrade", "reinstall")
 	Label          string // Checkbox label text
+	Description    string // Optional description text shown below the label
 	Required       bool   // If true, Install button disabled until checked
 	Warning        string // Optional warning text shown above checkbox (yellow box)
 	Checked        bool   // Initial checked state (default: false)
