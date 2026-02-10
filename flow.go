@@ -1227,19 +1227,21 @@ func (fl *fileListImpl) Cancelled() bool {
 // The onCopy callback is invoked when user clicks Copy (view stays open).
 // The onSave callback is invoked when user clicks Save (view stays open).
 // Returns when user closes the dialog.
-func (f *Flow) ShowReview(title, content string, onCopy func(), opts ...PageOption) {
-	f.showReviewInternal(title, content, onCopy, nil, opts...)
+func (f *Flow) ShowReview(title, content string, onCopy func(), opts ...PageOption) string {
+	return f.showReviewInternal(title, content, onCopy, nil, opts...)
 }
 
 // ShowReviewWithSave displays text content with Copy and Save buttons.
 // Both callbacks are invoked while the view stays open.
-func (f *Flow) ShowReviewWithSave(title, content string, onCopy, onSave func(), opts ...PageOption) {
-	f.showReviewInternal(title, content, onCopy, onSave, opts...)
+// Returns the button ID that closed the dialog (e.g. ButtonBack, ButtonClose,
+// or a custom button value). Callers can ignore the return value.
+func (f *Flow) ShowReviewWithSave(title, content string, onCopy, onSave func(), opts ...PageOption) string {
+	return f.showReviewInternal(title, content, onCopy, onSave, opts...)
 }
 
-func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), opts ...PageOption) {
+func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), opts ...PageOption) string {
 	if f.closed.Load() {
-		return
+		return ButtonClose
 	}
 	// Extract options
 	subtitle := ""
@@ -1354,10 +1356,10 @@ func (f *Flow) showReviewInternal(title, content string, onCopy, onSave func(), 
 				}
 				continue // Stay in dialog, wait for more messages
 			default:
-				return // Close or other button - exit
+				return msg.Button
 			}
 		default:
-			return
+			return ButtonClose
 		}
 	}
 }
