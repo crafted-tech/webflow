@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -190,6 +191,8 @@ func launchViaScheduledTaskForUser(exePath string, userToken windows.Token) erro
 		return fmt.Errorf("run task: %w", err)
 	}
 
+	// Brief wait for Task Scheduler to start the process, then delete.
+	time.Sleep(1 * time.Second)
 	runHidden(schtasks, "/delete", "/tn", taskName, "/f")
 	return nil
 }

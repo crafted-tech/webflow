@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"github.com/go-ole/go-ole"
@@ -39,12 +40,12 @@ var (
 // without passing on its elevated token.
 //
 // The function tries three strategies in order:
-//  1. Scheduled task — creates a one-shot task via schtasks.exe with
-//     /rl limited. Task Scheduler runs the process in its own context,
-//     outside the caller's job object and at non-elevated privilege.
-//  2. IShellDispatch2::ShellExecute via COM — asks the running Explorer
+//  1. IShellDispatch2::ShellExecute via COM — asks the running Explorer
 //     shell to launch the process (cross-process COM). The child inherits
 //     Explorer's non-elevated token and runs outside the caller's job.
+//  2. Scheduled task — creates a one-shot task via schtasks.exe with
+//     /rl limited. Task Scheduler runs the process in its own context,
+//     outside the caller's job object and at non-elevated privilege.
 //  3. Shell-token approach — borrows Explorer's token via
 //     CreateProcessWithTokenW. De-elevates but does NOT escape the
 //     caller's job object.
@@ -58,13 +59,13 @@ func LaunchDeElevated(exePath string) (uint32, error) {
 		return launchDirect(exePath)
 	}
 
-	// Primary: scheduled task (reliable job escape + de-elevation).
-	if err := launchViaScheduledTask(exePath); err == nil {
+	// Primary: COM to Explorer (direct, no Task Scheduler dependency).
+	if err := shellExecuteViaExplorer(exePath); err == nil {
 		return 0, nil
 	}
 
-	// Secondary: COM to Explorer (job escape + de-elevation).
-	if err := shellExecuteViaExplorer(exePath); err == nil {
+	// Fallback: scheduled task (works when Explorer isn't available).
+	if err := launchViaScheduledTask(exePath); err == nil {
 		return 0, nil
 	}
 
@@ -107,7 +108,8 @@ func launchViaScheduledTask(exePath string) error {
 		return fmt.Errorf("run task: %w", err)
 	}
 
-	// Clean up the task definition. The launched process is unaffected.
+	// Brief wait for Task Scheduler to start the process, then delete.
+	time.Sleep(1 * time.Second)
 	runHidden(schtasks, "/delete", "/tn", taskName, "/f")
 
 	return nil
