@@ -306,6 +306,12 @@ body.using-keyboard .btn:focus {
     margin-bottom: 1rem;
 }
 
+/* Add spacing when a form-group (e.g. checkbox) follows a text block or alert */
+.flow-message + .form-group,
+.summary-alert + .form-group {
+    margin-top: 1.25rem;
+}
+
 .form-field-hidden {
     display: none;
 }
