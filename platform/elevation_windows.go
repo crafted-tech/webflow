@@ -4,6 +4,7 @@ package platform
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"unsafe"
@@ -89,4 +90,58 @@ func isElevated() (bool, error) {
 	}
 
 	return elevation.TokenIsElevated != 0, nil
+}
+
+// LaunchElevated launches the current executable with the given args via
+// ShellExecute "runas". Fire-and-forget — caller reads PID from IPC file.
+// Returns ErrElevationDeclined if the user rejects the UAC prompt.
+func LaunchElevated(args string) error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("get executable path: %w", err)
+	}
+
+	err = windows.ShellExecute(0,
+		windows.StringToUTF16Ptr("runas"),
+		windows.StringToUTF16Ptr(exePath),
+		windows.StringToUTF16Ptr(args),
+		nil,
+		windows.SW_HIDE, // Elevated child has no UI window
+	)
+	if err != nil {
+		if errors.Is(err, windows.ERROR_CANCELLED) {
+			return ErrElevationDeclined
+		}
+		return fmt.Errorf("ShellExecute runas: %w", err)
+	}
+
+	return nil
+}
+
+// OpenProcessByPID opens a process handle for the given PID with enough
+// access rights to wait on it and query its exit code.
+func OpenProcessByPID(pid uint32) (windows.Handle, error) {
+	const desiredAccess = windows.PROCESS_QUERY_LIMITED_INFORMATION | windows.SYNCHRONIZE
+	handle, err := windows.OpenProcess(desiredAccess, false, pid)
+	if err != nil {
+		return 0, fmt.Errorf("OpenProcess(%d): %w", pid, err)
+	}
+	return handle, nil
+}
+
+// GetProcessExitCode returns the exit code of a process. The process must have exited.
+func GetProcessExitCode(handle windows.Handle) (uint32, error) {
+	var exitCode uint32
+	if err := windows.GetExitCodeProcess(handle, &exitCode); err != nil {
+		return 0, err
+	}
+	return exitCode, nil
+}
+
+// QuoteArg wraps a path in double quotes if it contains spaces.
+func QuoteArg(s string) string {
+	if strings.Contains(s, " ") {
+		return `"` + s + `"`
+	}
+	return s
 }
