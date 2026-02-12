@@ -164,25 +164,27 @@ type WebView2VersionError struct {
 
 func (e *WebView2VersionError) Error() string {
 	if e.IsServer {
-		return "Windows Server 2016 or later required"
+		return "Windows Server 2019 or later required"
 	}
 	return "Windows 10 version 1709 or later required"
 }
 
-// CheckWebView2Support verifies the OS supports WebView2 Evergreen Runtime.
+// CheckWebView2Support verifies the OS meets minimum version requirements.
 // Requirements:
 //   - Windows 10 version 1709+ (build 16299) for client editions
-//   - Windows Server 2016+ (build 14393) for server editions
+//   - Windows Server 2019+ (build 17763) for server editions
 //
 // Returns nil if supported, or WebView2VersionError describing the requirement.
 func CheckWebView2Support() error {
 	major, _, build := getWindowsVersion()
 	isServer := IsWindowsServer()
 
-	// Determine minimum build based on edition
+	// Minimum build is 16299 (Windows 10 1709 / Server 2019 SAC).
+	// Windows Server 2019 LTSC is build 17763, which also satisfies this.
+	// Windows Server 2016 (build 14393) is explicitly not supported.
 	var minBuild uint32
 	if isServer {
-		minBuild = 14393 // Server 2016
+		minBuild = 17763 // Server 2019
 	} else {
 		minBuild = 16299 // Windows 10 1709
 	}

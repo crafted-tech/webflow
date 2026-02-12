@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unsafe"
 
@@ -139,30 +140,43 @@ func RunFirstPhase() error {
 	// Forward original args (excluding any phase flags)
 	args = append(args, FilterSecondPhaseArgs()...)
 
-	// Spawn Phase 2
+	// Spawn Phase 2. Use CREATE_BREAKAWAY_FROM_JOB to detach from the
+	// caller's job object. Without this, the child process gets killed when
+	// Phase 1 exits if the job has JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE set
+	// (common when launched from Windows Terminal or other process managers).
+	// If the job doesn't allow breakaway, fall back to normal CreateProcess.
+	// Phase 2 uses NTFS ADS POSIX delete to remove the original exe BEFORE
+	// signaling Phase 1, so being killed by the job is harmless.
 	cmd := exec.Command(tempExe, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		CreationFlags: windows.CREATE_BREAKAWAY_FROM_JOB,
+	}
 	if err := cmd.Start(); err != nil {
-		os.RemoveAll(tempDir)
-		return fmt.Errorf("start phase 2: %w", err)
+		// Retry without CREATE_BREAKAWAY_FROM_JOB
+		cmd = exec.Command(tempExe, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Start(); err != nil {
+			os.RemoveAll(tempDir)
+			return fmt.Errorf("start phase 2: %w", err)
+		}
 	}
 
 	// Open Phase 2 process handle with SYNCHRONIZE access for waiting
-	// Note: cmd.Process.Pid is the process ID, not a handle
 	processHandle, _ := windows.OpenProcess(windows.SYNCHRONIZE, false, uint32(cmd.Process.Pid))
 	shouldDeleteTempDir := false
 
 	// Wait for completion signal from Phase 2 OR Phase 2 crash
-	// This matches Inno Setup's MsgWaitForMultipleObjects approach
-	signalReceived := waitForSignalOrProcessDeath(wnd, processHandle)
+	signalRcvd := waitForSignalOrProcessDeath(wnd, processHandle)
 
 	if processHandle != 0 {
 		windows.CloseHandle(processHandle)
 	}
 
 	// If Phase 2 died without signaling, we need to clean up
-	if !signalReceived {
+	if !signalRcvd {
 		shouldDeleteTempDir = true
 	}
 
@@ -174,6 +188,76 @@ func RunFirstPhase() error {
 	// Note: In Inno Setup, the done file is created by Phase 2, not Phase 1.
 	// Phase 2 holds the done file open, so cleanup won't happen until Phase 2 exits.
 	// Phase 1 just exits after receiving the signal.
+
+	return nil
+}
+
+// DeleteRunningExe deletes an executable that may be currently running by
+// using the NTFS Alternate Data Stream technique. This works on Windows 10
+// 1709+ (build 16299) with NTFS filesystems.
+//
+// The technique renames the file's default ::$DATA stream to an alternate
+// stream name, then marks the file for POSIX deletion. POSIX semantics
+// unlink the directory entry immediately while the actual data persists
+// until all handles and mapped image sections are released.
+//
+// Returns an error if the technique is not supported (non-NTFS, old Windows)
+// or if the operation fails. Callers should fall back to rename-based
+// deletion when this fails.
+func DeleteRunningExe(path string) error {
+	pathPtr, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+
+	// Step 1: Open with DELETE access for stream rename.
+	h, err := windows.CreateFile(pathPtr,
+		windows.DELETE|windows.SYNCHRONIZE,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		return fmt.Errorf("open for rename: %w", err)
+	}
+
+	// Step 2: Rename the default ::$DATA stream to :deadbeef.
+	// This moves the executable's mapped image section out of the default
+	// stream so the file can be marked for deletion.
+	type fileRenameInfo struct {
+		ReplaceIfExists uint32
+		RootDirectory   uintptr
+		FileNameLength  uint32
+		FileName        [9]uint16 // ":deadbeef" = 9 UTF-16 code units
+	}
+	adsNameUTF16, _ := windows.UTF16FromString(":deadbeef")
+	var renameInfo fileRenameInfo
+	renameInfo.FileNameLength = 9 * 2 // byte count
+	copy(renameInfo.FileName[:], adsNameUTF16)
+
+	err = windows.SetFileInformationByHandle(h, windows.FileRenameInfo,
+		(*byte)(unsafe.Pointer(&renameInfo)), uint32(unsafe.Sizeof(renameInfo)))
+	windows.CloseHandle(h)
+	if err != nil {
+		return fmt.Errorf("rename stream: %w", err)
+	}
+
+	// Step 3: Reopen and mark for POSIX delete.
+	// Must reopen because the previous handle was associated with the
+	// now-renamed stream; we need a fresh handle to the file entry.
+	h, err = windows.CreateFile(pathPtr,
+		windows.DELETE|windows.SYNCHRONIZE,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, 0, 0)
+	if err != nil {
+		return fmt.Errorf("reopen for delete: %w", err)
+	}
+
+	flags := uint32(windows.FILE_DISPOSITION_DELETE | windows.FILE_DISPOSITION_POSIX_SEMANTICS)
+	err = windows.SetFileInformationByHandle(h, windows.FileDispositionInfoEx,
+		(*byte)(unsafe.Pointer(&flags)), uint32(unsafe.Sizeof(flags)))
+	windows.CloseHandle(h)
+	if err != nil {
+		return fmt.Errorf("set disposition: %w", err)
+	}
 
 	return nil
 }

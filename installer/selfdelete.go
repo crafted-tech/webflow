@@ -5,7 +5,10 @@ package installer
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
+
+	"golang.org/x/sys/windows"
 
 	"github.com/crafted-tech/webflow/platform"
 )
@@ -56,22 +59,62 @@ func RunSecondPhase(logFile string) {
 	doneHandle := platform.CreateDoneSignalFile()
 	_ = doneHandle // Intentionally never closed - OS closes on exit
 
-	// Signal Phase 1 and wait for it to actually exit
-	// This matches Inno Setup's approach: get process ID from window handle,
-	// signal, then WaitForSingleObject(INFINITE) on the process
+	// Delete the original exe BEFORE signaling Phase 1.
+	// Use NTFS ADS technique to delete the running exe (POSIX unlink).
+	// This makes Phase 2 fully resilient to Job Object kills: even if
+	// Phase 2 dies when Phase 1 exits, the file is already gone.
+	// Falls back to rename + MoveFileEx reboot cleanup on older Windows
+	// or non-NTFS filesystems.
+	deleted := false
+	renamedPath := ""
+
+	logInfo(log, "Deleting %s via POSIX delete", filepath.Base(config.OriginalExePath))
+	if err := platform.DeleteRunningExe(config.OriginalExePath); err != nil {
+		logWarn(log, "POSIX delete failed: %v — falling back to rename", err)
+		renamedPath = config.OriginalExePath + ".removing"
+		if err := os.Rename(config.OriginalExePath, renamedPath); err != nil {
+			logWarn(log, "Rename failed: %v", err)
+			renamedPath = ""
+		} else {
+			logInfo(log, "Renamed to %s", filepath.Base(renamedPath))
+			if pathPtr, err := windows.UTF16PtrFromString(renamedPath); err == nil {
+				if err := windows.MoveFileEx(pathPtr, nil, windows.MOVEFILE_DELAY_UNTIL_REBOOT); err == nil {
+					logInfo(log, "Scheduled %s for deletion on reboot", filepath.Base(renamedPath))
+				}
+			}
+		}
+	} else {
+		deleted = true
+		logInfo(log, "Deleted successfully: %s", filepath.Base(config.OriginalExePath))
+	}
+
+	// Signal Phase 1 and wait for it to actually exit.
+	// NOTE: If inside a Job Object with KILL_ON_JOB_CLOSE, Phase 2 dies here.
+	// That's OK — the file is already deleted (or renamed + scheduled).
 	logInfo(log, "Signaling Phase 1 and waiting for process to exit")
 	platform.SignalFirstPhaseAndWait(config.FirstPhaseWnd)
 
-	// Small additional delay to ensure file handles are released
-	// Inno Setup uses 500ms here - "helps the DelayDeleteFile call succeed on the first try"
+	// If we reach here, Phase 2 survived (no Job Object killed us).
 	time.Sleep(500 * time.Millisecond)
 
-	// Delete the original uninstaller executable
-	logInfo(log, "Deleting original uninstaller")
-	if err := platform.DeleteOriginalUninstaller(config.OriginalExePath); err != nil {
-		logWarn(log, "Could not delete original uninstaller: %v", err)
-	} else {
-		logInfo(log, "Original uninstaller deleted successfully")
+	// If rename fallback was used, try to delete the renamed file now
+	// that Phase 1 has exited and released its mapped image section.
+	if !deleted && renamedPath != "" {
+		logInfo(log, "Deleting %s", filepath.Base(renamedPath))
+		if err := platform.DeleteOriginalUninstaller(renamedPath); err != nil {
+			logWarn(log, "Could not delete %s: %v", filepath.Base(renamedPath), err)
+		} else {
+			deleted = true
+			logInfo(log, "Deleted successfully: %s", filepath.Base(renamedPath))
+		}
+	}
+
+	// Try to remove the now-empty install directory.
+	if deleted {
+		dir := filepath.Dir(config.OriginalExePath)
+		if err := os.Remove(dir); err == nil {
+			logInfo(log, "Removed empty install directory: %s", dir)
+		}
 	}
 
 	// Try to delete ourselves (best effort - cleanup handles failures)
