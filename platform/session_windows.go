@@ -248,11 +248,13 @@ func launchViaScheduledTaskForUser(exePath string, userToken windows.Token) erro
 		"/sc", "once",
 		"/st", "00:00",
 		"/ru", ruArg,
-		"/np",
 		"/it",
 		"/f",
 	); err != nil {
 		return fmt.Errorf("create task: %w", err)
+	}
+	if err := setTaskBatteryFriendly(taskName); err != nil {
+		return fmt.Errorf("update task settings: %w", err)
 	}
 
 	AllowSetForegroundForAnyProcess()

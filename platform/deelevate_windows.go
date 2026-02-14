@@ -99,6 +99,9 @@ func launchViaScheduledTask(exePath string) error {
 	); err != nil {
 		return fmt.Errorf("create task: %w", err)
 	}
+	if err := setTaskBatteryFriendly(taskName); err != nil {
+		return fmt.Errorf("update task settings: %w", err)
+	}
 
 	// Grant any process the right to set foreground window. Without this,
 	// the app launched by Task Scheduler would appear behind other windows.
@@ -130,6 +133,22 @@ func runHidden(name string, args ...string) error {
 		return fmt.Errorf("%s: %w", base, err)
 	}
 	return nil
+}
+
+func setTaskBatteryFriendly(taskName string) error {
+	powershell := filepath.Join(os.Getenv("WINDIR"), "System32", "WindowsPowerShell", "v1.0", "powershell.exe")
+	escapedTaskName := strings.ReplaceAll(taskName, "'", "''")
+	script := fmt.Sprintf(
+		"$s=New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable; Set-ScheduledTask -TaskName '%s' -Settings $s | Out-Null",
+		escapedTaskName,
+	)
+	return runHidden(
+		powershell,
+		"-NoProfile",
+		"-NonInteractive",
+		"-ExecutionPolicy", "Bypass",
+		"-Command", script,
+	)
 }
 
 // shellExecuteViaExplorer uses the IShellDispatch2::ShellExecute COM
