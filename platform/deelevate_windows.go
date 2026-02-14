@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -27,10 +28,10 @@ const logonWithProfile = 0x00000001
 
 // COM GUIDs for the IShellDispatch2 technique.
 var (
-	clsidShellWindows      = ole.NewGUID("9BA05972-F6A8-11CF-A442-00A0C90A8F39")
-	sidSTopLevelBrowser    = ole.NewGUID("4C96BE40-915C-11CF-99D3-00AA004AE837")
-	iidIShellBrowser       = ole.NewGUID("000214E2-0000-0000-C000-000000000046")
-	iidIServiceProvider    = ole.NewGUID("6D5140C1-7436-11CE-8034-00AA006009FA")
+	clsidShellWindows       = ole.NewGUID("9BA05972-F6A8-11CF-A442-00A0C90A8F39")
+	sidSTopLevelBrowser     = ole.NewGUID("4C96BE40-915C-11CF-99D3-00AA004AE837")
+	iidIShellBrowser        = ole.NewGUID("000214E2-0000-0000-C000-000000000046")
+	iidIServiceProvider     = ole.NewGUID("6D5140C1-7436-11CE-8034-00AA006009FA")
 	iidIShellFolderViewDual = ole.NewGUID("E7A1AF80-4D96-11CF-960C-0080C7F4EE85")
 )
 
@@ -119,8 +120,13 @@ func launchViaScheduledTask(exePath string) error {
 func runHidden(name string, args ...string) error {
 	cmd := exec.Command(name, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s %v: %w", filepath.Base(name), args[:2], err)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		base := filepath.Base(name)
+		if len(output) > 0 {
+			return fmt.Errorf("%s: %w (output: %s)", base, err, strings.TrimSpace(string(output)))
+		}
+		return fmt.Errorf("%s: %w", base, err)
 	}
 	return nil
 }

@@ -140,6 +140,11 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 		if schtasksErr := launchViaScheduledTaskForUser(exePath, primaryToken); schtasksErr != nil {
 			return 0, fmt.Errorf("CreateProcessAsUser: %w; schtasks fallback: %w", err, schtasksErr)
 		}
+		// Task Scheduler can report success while the process never materializes.
+		// Confirm the process appears before reporting success to the caller.
+		if !waitForProcessByName(filepath.Base(exePath), 8*time.Second) {
+			return 0, fmt.Errorf("schtasks fallback did not start process %q", filepath.Base(exePath))
+		}
 		return 0, nil
 	}
 
@@ -147,6 +152,17 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 	windows.CloseHandle(pi.Thread)
 
 	return pi.ProcessId, nil
+}
+
+func waitForProcessByName(exeName string, timeout time.Duration) bool {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if IsProcessRunning(exeName) {
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return IsProcessRunning(exeName)
 }
 
 // launchViaScheduledTaskForUser creates and immediately runs a one-shot
