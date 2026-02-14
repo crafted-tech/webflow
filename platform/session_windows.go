@@ -58,7 +58,7 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 		userToken,
 		windows.MAXIMUM_ALLOWED,
 		nil,
-		windows.SecurityIdentification,
+		windows.SecurityImpersonation,
 		windows.TokenPrimary,
 		&primaryToken,
 	)
