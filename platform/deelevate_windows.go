@@ -95,6 +95,7 @@ func launchViaScheduledTask(exePath string) error {
 		"/st", "00:00",
 		"/f",
 		"/rl", "limited",
+		"/it",
 	); err != nil {
 		return fmt.Errorf("create task: %w", err)
 	}

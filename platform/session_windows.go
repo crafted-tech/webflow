@@ -248,6 +248,7 @@ func launchViaScheduledTaskForUser(exePath string, userToken windows.Token) erro
 		"/sc", "once",
 		"/st", "00:00",
 		"/ru", ruArg,
+		"/np",
 		"/it",
 		"/f",
 	); err != nil {
