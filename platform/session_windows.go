@@ -133,6 +133,12 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 		)
 	}
 	if err != nil {
+		// Retry via CreateProcessWithTokenW. This path often works in service-child
+		// contexts where CreateProcessAsUser lacks required privileges.
+		if pid, tokenErr := createProcessWithToken(primaryToken, exePath, envBlock, workDirPtr, desktop); tokenErr == nil {
+			return pid, nil
+		}
+
 		// CreateProcessAsUser failed. Fall back to schtasks with the session
 		// user's identity — the same proven approach used by LaunchDeElevated
 		// (launchViaScheduledTask) but with /ru <user> /it so the task runs
@@ -151,6 +157,54 @@ func LaunchAsSessionUser(exePath string) (uint32, error) {
 	windows.CloseHandle(pi.Process)
 	windows.CloseHandle(pi.Thread)
 
+	return pi.ProcessId, nil
+}
+
+func createProcessWithToken(primaryToken windows.Token, exePath string, envBlock *uint16, workDirPtr *uint16, desktop *uint16) (uint32, error) {
+	exePathPtr, err := windows.UTF16PtrFromString(exePath)
+	if err != nil {
+		return 0, fmt.Errorf("invalid exe path: %w", err)
+	}
+
+	si := windows.StartupInfo{
+		Cb:      uint32(unsafe.Sizeof(windows.StartupInfo{})),
+		Desktop: desktop,
+	}
+	var pi windows.ProcessInformation
+
+	flags := uintptr(windows.CREATE_UNICODE_ENVIRONMENT | windows.CREATE_NEW_PROCESS_GROUP | windows.CREATE_BREAKAWAY_FROM_JOB)
+	r1, _, e1 := procCreateProcessWithTokenW.Call(
+		uintptr(primaryToken),
+		logonWithProfile,
+		uintptr(unsafe.Pointer(exePathPtr)),
+		0,
+		flags,
+		uintptr(unsafe.Pointer(envBlock)),
+		uintptr(unsafe.Pointer(workDirPtr)),
+		uintptr(unsafe.Pointer(&si)),
+		uintptr(unsafe.Pointer(&pi)),
+	)
+	if r1 == 0 {
+		// Some environments deny breakaway; retry without it.
+		flags = uintptr(windows.CREATE_UNICODE_ENVIRONMENT | windows.CREATE_NEW_PROCESS_GROUP)
+		r1, _, e1 = procCreateProcessWithTokenW.Call(
+			uintptr(primaryToken),
+			logonWithProfile,
+			uintptr(unsafe.Pointer(exePathPtr)),
+			0,
+			flags,
+			uintptr(unsafe.Pointer(envBlock)),
+			uintptr(unsafe.Pointer(workDirPtr)),
+			uintptr(unsafe.Pointer(&si)),
+			uintptr(unsafe.Pointer(&pi)),
+		)
+		if r1 == 0 {
+			return 0, fmt.Errorf("CreateProcessWithTokenW: %w", e1)
+		}
+	}
+
+	windows.CloseHandle(pi.Process)
+	windows.CloseHandle(pi.Thread)
 	return pi.ProcessId, nil
 }
 
