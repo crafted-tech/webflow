@@ -99,9 +99,9 @@ func launchViaScheduledTask(exePath string) error {
 	); err != nil {
 		return fmt.Errorf("create task: %w", err)
 	}
-	if err := setTaskBatteryFriendly(taskName); err != nil {
-		return fmt.Errorf("update task settings: %w", err)
-	}
+	// Battery settings are an optimization — don't fail the launch if
+	// PowerShell is unavailable (execution policy, locked-down enterprise).
+	_ = setTaskBatteryFriendly(taskName)
 
 	// Grant any process the right to set foreground window. Without this,
 	// the app launched by Task Scheduler would appear behind other windows.

@@ -185,22 +185,7 @@ func createProcessWithToken(primaryToken windows.Token, exePath string, envBlock
 		uintptr(unsafe.Pointer(&pi)),
 	)
 	if r1 == 0 {
-		// Some environments deny breakaway; retry without it.
-		flags = uintptr(windows.CREATE_UNICODE_ENVIRONMENT | windows.CREATE_NEW_PROCESS_GROUP)
-		r1, _, e1 = procCreateProcessWithTokenW.Call(
-			uintptr(primaryToken),
-			logonWithProfile,
-			uintptr(unsafe.Pointer(exePathPtr)),
-			0,
-			flags,
-			uintptr(unsafe.Pointer(envBlock)),
-			uintptr(unsafe.Pointer(workDirPtr)),
-			uintptr(unsafe.Pointer(&si)),
-			uintptr(unsafe.Pointer(&pi)),
-		)
-		if r1 == 0 {
-			return 0, fmt.Errorf("CreateProcessWithTokenW: %w", e1)
-		}
+		return 0, fmt.Errorf("CreateProcessWithTokenW: %w", e1)
 	}
 
 	windows.CloseHandle(pi.Process)
@@ -253,9 +238,9 @@ func launchViaScheduledTaskForUser(exePath string, userToken windows.Token) erro
 	); err != nil {
 		return fmt.Errorf("create task: %w", err)
 	}
-	if err := setTaskBatteryFriendly(taskName); err != nil {
-		return fmt.Errorf("update task settings: %w", err)
-	}
+	// Battery settings are an optimization — don't fail the launch if
+	// PowerShell is unavailable (execution policy, locked-down enterprise).
+	_ = setTaskBatteryFriendly(taskName)
 
 	AllowSetForegroundForAnyProcess()
 
