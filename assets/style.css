@@ -492,6 +492,49 @@ body.using-keyboard .form-checkbox:focus {
     flex-shrink: 0;
 }
 
+/* In-field reveal toggle (eye icon) for password fields.
+   The wrapper is positioned-relative so the toggle button can sit
+   absolutely on the right edge of the input. The input itself gets
+   extra right-padding so typed text never runs under the icon. */
+.form-input-reveal {
+    position: relative;
+    display: block;
+}
+.form-input-reveal .form-input-with-reveal {
+    padding-right: 2.25rem;
+}
+.form-input-reveal .form-reveal-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0.25rem;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    line-height: 0;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+.form-input-reveal .form-reveal-toggle:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--accent));
+}
+.form-input-reveal .form-reveal-toggle:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 1px;
+}
+.form-input-reveal .form-reveal-toggle [hidden] {
+    display: none;
+}
+
 /* Input width variants */
 .form-input-narrow {
     width: 100px;

@@ -268,6 +268,7 @@ type FormField struct {
 	InvalidatesForm bool      // If true, changing this field hides alerts and disables Next button
 	Hidden          bool      // If true, field is initially hidden (shown when form is invalidated)
 	Focus           bool      // If true, field receives focus when form is displayed
+	RevealToggle    bool      // For FieldPassword: render a show/hide eye toggle next to the input
 }
 
 // Choice represents an option in a choice list.
@@ -491,6 +492,20 @@ type ConfirmCheckboxConfig struct {
 	Message        string // Main message text
 	CheckboxLabel  string // Label for the required checkbox
 	WarningMessage string // Optional warning message (shown in yellow/orange)
+}
+
+// ConfirmTextConfig configures a confirmation dialog that requires the
+// user to type a specific phrase before the Next button is enabled.
+// Used for high-risk destructive actions (e.g. resetting state) where a
+// checkbox is too easy to click through.
+type ConfirmTextConfig struct {
+	Title          string // Dialog title
+	Message        string // Main message text
+	WarningMessage string // Optional warning message (shown in yellow/orange)
+	Prompt         string // Optional label above the input (e.g., 'Type "clear" to confirm')
+	RequiredText   string // The exact text the user must type to enable Next
+	CaseSensitive  bool   // If true, comparison is case-sensitive. Default false.
+	Placeholder    string // Optional placeholder for the input
 }
 
 // AlertType defines the type of alert (used for both inline alerts and alert dialogs).

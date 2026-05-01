@@ -715,6 +715,48 @@ func (f *Flow) ShowLicense(cfg LicenseConfig, opts ...PageOption) any {
 	}
 }
 
+// ShowConfirmWithText displays a confirmation dialog that requires the
+// user to type cfg.RequiredText before the Next/Install button is enabled.
+// Suitable for high-risk destructive actions (e.g. resetting state) where
+// a checkbox is too easy to click through.
+//
+// Returns:
+//   - true if user confirmed (typed the required text and clicked Next/Install)
+//   - Navigation (Back/Close) for navigation
+func (f *Flow) ShowConfirmWithText(cfg ConfirmTextConfig, opts ...PageOption) any {
+	hasButtonBar := false
+	for _, opt := range opts {
+		pcfg := PageConfig{}
+		opt(&pcfg)
+		if pcfg.ButtonBar != nil {
+			hasButtonBar = true
+			break
+		}
+	}
+	if !hasButtonBar {
+		bb := WizardInstall()
+		bb.Next = bb.Next.Disabled()
+		opts = append(opts, WithButtonBar(bb))
+	}
+
+	page := applyPageConfig(cfg.Title, cfg, opts)
+	msg := f.showPageInternal(page)
+
+	switch msg.Button {
+	case ButtonBack:
+		return Back
+	case ButtonNext:
+		return true
+	case ButtonClose, ButtonCancel, "":
+		if msg.Button == "" && msg.Type != "window_close" {
+			return true
+		}
+		return Close
+	default:
+		return Navigation(msg.Button)
+	}
+}
+
 // ShowConfirmWithCheckbox displays a confirmation dialog with a required checkbox.
 // The Next/Install button is disabled until the checkbox is checked.
 //

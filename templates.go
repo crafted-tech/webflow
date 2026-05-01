@@ -199,6 +199,8 @@ func renderContent(content any) (string, bool) {
 		return renderLicenseView(c), true
 	case ConfirmCheckboxConfig:
 		return renderConfirmCheckboxView(c), false
+	case ConfirmTextConfig:
+		return renderConfirmTextView(c), false
 	case SummaryConfig:
 		return renderSummaryView(c), false
 	case AlertConfig:
@@ -323,31 +325,18 @@ func renderMenuList(items []MenuItem) string {
 	return buf.String()
 }
 
-// renderMenuIcon renders an icon for menu items.
+// renderMenuIcon renders an icon for menu items. Resolves names through
+// the shared Lucide icon set (icons.json + GetIcon) so menus use the same
+// visual language as alerts, headers, and buttons. Custom inline SVG is
+// passed through unchanged.
 func renderMenuIcon(icon string) string {
-	// Check for built-in icon names
-	switch icon {
-	case "info":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`
-	case "warning":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>`
-	case "error":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`
-	case "success":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>`
-	case "settings":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>`
-	case "folder":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`
-	case "file":
-		return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>`
-	default:
-		// Assume it's custom SVG content
-		if strings.HasPrefix(icon, "<svg") {
-			return icon
-		}
+	if icon == "" {
 		return ""
 	}
+	if strings.HasPrefix(icon, "<svg") {
+		return icon
+	}
+	return GetIcon(icon)
 }
 
 // renderForm renders a form with input fields.
@@ -411,17 +400,35 @@ func renderFormField(field FormField) string {
 			inputClass += " form-input-" + field.Width
 		}
 
-		// If field has a suffix button, wrap in inline group
-		if field.Suffix != nil {
+		// Reveal toggle (eye icon) is only meaningful for password fields.
+		// It renders as an in-field icon button absolutely positioned over
+		// the right edge of the input — distinct from Suffix, which renders
+		// as a separate button next to the input.
+		showRevealToggle := field.RevealToggle && field.Type == FieldPassword
+
+		switch {
+		case showRevealToggle:
+			// In-field eye: input gets extra right-padding (form-input-with-reveal)
+			// so typed text doesn't run under the icon. The toggle button is
+			// positioned absolutely by .form-input-reveal CSS.
+			revealInputClass := inputClass + " form-input-with-reveal"
+			buf.WriteString(`                    <div class="form-input-reveal">
+`)
+			buf.WriteString(fmt.Sprintf(`                        <input type="%s" id="%s" class="%s" value="%s"%s%s%s%s>
+`, inputType, html.EscapeString(field.ID), revealInputClass, html.EscapeString(defaultVal), placeholder, required, invalidates, autofocus))
+			buf.WriteString(fmt.Sprintf(`                        <button type="button" class="form-reveal-toggle" data-reveal-target="%s" onclick="window.toggleReveal(this)" title="Show password" aria-label="Show password" tabindex="-1"><span class="reveal-eye">%s</span><span class="reveal-eye-off" hidden>%s</span></button>
+`, html.EscapeString(field.ID), GetIcon("eye"), GetIcon("eye-off")))
+			buf.WriteString(`                    </div>
+`)
+		case field.Suffix != nil:
 			buf.WriteString(`                    <div class="form-input-group">
 `)
 			buf.WriteString(fmt.Sprintf(`                        <input type="%s" id="%s" class="%s" value="%s"%s%s%s%s>
 `, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required, invalidates, autofocus))
-			// Render suffix button
 			buf.WriteString(renderInlineButton(field.Suffix))
 			buf.WriteString(`                    </div>
 `)
-		} else {
+		default:
 			buf.WriteString(fmt.Sprintf(`                    <input type="%s" id="%s" class="%s" value="%s"%s%s%s%s>
 `, inputType, html.EscapeString(field.ID), inputClass, html.EscapeString(defaultVal), placeholder, required, invalidates, autofocus))
 		}
@@ -736,6 +743,53 @@ func renderConfirmCheckboxView(cfg ConfirmCheckboxConfig) string {
             </div>
 `, html.EscapeString(cfg.CheckboxLabel)))
 	}
+
+	return buf.String()
+}
+
+// renderConfirmTextView renders a confirmation dialog that requires the
+// user to type a specific phrase to enable the Next button.
+func renderConfirmTextView(cfg ConfirmTextConfig) string {
+	var buf bytes.Buffer
+
+	if cfg.Message != "" {
+		escapedMsg := html.EscapeString(cfg.Message)
+		formattedMsg := strings.ReplaceAll(escapedMsg, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`            <p class="flow-message">%s</p>
+`, formattedMsg))
+	}
+
+	if cfg.WarningMessage != "" {
+		icon := GetIcon("warning")
+		escapedWarn := html.EscapeString(cfg.WarningMessage)
+		formattedWarn := strings.ReplaceAll(escapedWarn, "\n", "<br>")
+		buf.WriteString(fmt.Sprintf(`            <div class="summary-alert summary-alert-warning">
+                <span class="summary-alert-icon">%s</span>
+                <span class="summary-alert-text">%s</span>
+            </div>
+`, icon, formattedWarn))
+	}
+
+	prompt := cfg.Prompt
+	if prompt == "" && cfg.RequiredText != "" {
+		prompt = fmt.Sprintf(`Type %q to confirm`, cfg.RequiredText)
+	}
+
+	caseSensitive := "false"
+	if cfg.CaseSensitive {
+		caseSensitive = "true"
+	}
+
+	placeholder := ""
+	if cfg.Placeholder != "" {
+		placeholder = fmt.Sprintf(` placeholder="%s"`, html.EscapeString(cfg.Placeholder))
+	}
+
+	buf.WriteString(fmt.Sprintf(`            <div class="form-group">
+                <label class="form-label" for="_confirm_text">%s</label>
+                <input type="text" id="_confirm_text" class="form-input" value="" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"%s data-required-text="%s" data-case-sensitive="%s" oninput="window.updateConfirmButtonByText(this)" autofocus>
+            </div>
+`, html.EscapeString(prompt), placeholder, html.EscapeString(cfg.RequiredText), caseSensitive))
 
 	return buf.String()
 }

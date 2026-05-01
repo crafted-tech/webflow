@@ -321,12 +321,61 @@
         });
     };
 
+    // Toggle a password field between hidden and visible. JS-only — does not
+    // submit the form. Used by the FormField.RevealToggle eye-icon button.
+    window.toggleReveal = function(btn) {
+        var targetId = btn.getAttribute('data-reveal-target');
+        if (!targetId) return;
+        var input = document.getElementById(targetId);
+        if (!input) return;
+        var eye = btn.querySelector('.reveal-eye');
+        var eyeOff = btn.querySelector('.reveal-eye-off');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (eye) eye.hidden = true;
+            if (eyeOff) eyeOff.hidden = false;
+            btn.setAttribute('title', 'Hide password');
+            btn.setAttribute('aria-label', 'Hide password');
+        } else {
+            input.type = 'password';
+            if (eye) eye.hidden = false;
+            if (eyeOff) eyeOff.hidden = true;
+            btn.setAttribute('title', 'Show password');
+            btn.setAttribute('aria-label', 'Show password');
+        }
+    };
+
     // Update confirm button enabled state based on checkbox (for ShowConfirmWithCheckbox)
     window.updateConfirmButton = function(checked) {
         // Find the primary button (Next/Install) and enable/disable it
         var primaryBtn = document.querySelector('.btn-primary[data-button]');
         if (primaryBtn) {
             if (checked) {
+                primaryBtn.classList.remove('btn-disabled');
+                primaryBtn.disabled = false;
+            } else {
+                primaryBtn.classList.add('btn-disabled');
+                primaryBtn.disabled = true;
+            }
+        }
+    };
+
+    // Update confirm button enabled state based on a text-match (for
+    // ShowConfirmWithText). The input element carries the required text
+    // and case-sensitivity flag as data-* attributes.
+    window.updateConfirmButtonByText = function(input) {
+        var required = input.getAttribute('data-required-text') || '';
+        var caseSensitive = input.getAttribute('data-case-sensitive') === 'true';
+        var entered = input.value || '';
+        var matches;
+        if (caseSensitive) {
+            matches = (entered === required);
+        } else {
+            matches = (entered.toLowerCase() === required.toLowerCase());
+        }
+        var primaryBtn = document.querySelector('.btn-primary[data-button]');
+        if (primaryBtn) {
+            if (matches) {
                 primaryBtn.classList.remove('btn-disabled');
                 primaryBtn.disabled = false;
             } else {
